@@ -128,7 +128,7 @@
 #define RF_CHANNEL_5	0b00010000
 #define RF_CHANNEL_6	0b00100000
 #define RF_CHANNEL_7	0b01000000
-#define RF_CHANNEL_8	0b10000000 
+#define RF_CHANNEL_8	0b10000000
 
 /* --- TYPEDEF --- */
 // rfAddr
