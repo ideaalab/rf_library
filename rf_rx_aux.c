@@ -48,11 +48,10 @@
  * cada mando, entonces cada canal se graba "entero" (3 bytes = direccion + canal),
  * lo que permite almacenar cada canal con independencia de los canales del
  * mando fisico. Es decir que cada canal puede pertenecer a un mando diferente
- * -Si no se declara "NUM_CANALES" entonces solo se graba la direccion
+ * -Si no se declara "NUM_CANALES_RF" entonces solo se graba la direccion
 */
 
 #include "rf_remotes.h"
-
 
 #ifndef NUM_MANDOS_RF
 #ERROR "Hay que declarar NUM_MANDOS_RF para que la libreria funcione"
@@ -96,6 +95,8 @@
 #define RF_SAVE_BYTES	3
 #endif
 
+#warning "Hacer un header para esta libreria"
+
 //usadas para cuando se graba un mando
 #define LAST_POS_TO_MOVE	(POS_MEM_MANDOS_START_RF)
 
@@ -103,9 +104,11 @@
 #warning "Comprobar si esta bien"
 #define FIRST_POS_TO_MOVE	(POS_MEM_MANDOS_START_RF + ((NUM_MANDOS_RF - 1) * RF_SAVE_BYTES) - 1)
 #define POS_TO_JUMP			(RF_SAVE_BYTES))
+#define	RF_LAST_VALUE		(POS_MEM_MANDOS_START_RF + (NUM_MANDOS_RF * RF_SAVE_BYTES) - 1)
 #else						//se graban los canales
 #define FIRST_POS_TO_MOVE	(POS_MEM_MANDOS_START_RF + ((NUM_MANDOS_RF - 1) * NUM_CANALES_RF * RF_SAVE_BYTES) - 1)
 #define POS_TO_JUMP			(RF_SAVE_BYTES * NUM_CANALES_RF)
+#define	RF_LAST_VALUE		(POS_MEM_MANDOS_START_RF + (NUM_MANDOS_RF * NUM_CANALES_RF * RF_SAVE_BYTES) - 1)
 #endif
 
 /* MACROS */
@@ -263,4 +266,13 @@ short LeerMandos(void){
 	enable_interrupts(GLOBAL);
 	
 	return(Mando);
+}
+
+/*
+ * Borra todos los mandos sincronizados
+ */
+void BorrarMandos(void){
+	for(int x = POS_MEM_MANDOS_START_RF; x <= RF_LAST_VALUE; x++){
+		write_eeprom(x, 0xFF);
+	}
 }
