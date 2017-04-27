@@ -121,7 +121,7 @@ void RF_mantenido_init(void){
  * 0 1 2 3 4 5 6 7 8
 */
 void GrabarMando(void){
-byte x = 0;
+	int x = 0;
 
 #warning "En vez de grabar el valor de -Recibido- se puede pasar el valor a grabar a la funcion?"
 #warning "Comprobar que funciona correctamente"
@@ -161,9 +161,10 @@ short LeerMandos(void){
 //lee los mandos
 #ifdef GRABAR_DIRECCIONES
 	for(int x = 0; x<NUM_MANDOS_RF; x++){
+		PosBase = POS_MEM_MANDOS_START + (x*POS_TO_JUMP);
 		DirRF[x].Completo = 0;
-		DirRF[x].Bytes.Lo = read_eeprom(POS_MEM_MANDOS_START + (x*POS_TO_JUMP) + RF_ADDR_LO);
-		DirRF[x].Bytes.Hi = read_eeprom(POS_MEM_MANDOS_START + (x*POS_TO_JUMP) + RF_ADDR_HI);
+		DirRF[x].Bytes.Lo = read_eeprom(PosBase + RF_ADDR_LO);
+		DirRF[x].Bytes.Hi = read_eeprom(PosBase + RF_ADDR_HI);
 
 		//si el mando leido es diferente a 0xFFFFFF quiere decir que hay algo grabado
 		if((DirRF[x][y].Completo != 0) && (DirRF[x].Completo != 0xFFFFFF)){
@@ -173,9 +174,9 @@ short LeerMandos(void){
 #else
 	for(int x = 0; x<NUM_MANDOS_RF; x++){
 		for(int y = 0; y<NUM_CANALES_RF; y++){
-			DirRF[x][y].Completo = 0;
 			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
 			
+			DirRF[x][y].Completo = 0;
 			DirRF[x][y].Bytes.Lo = read_eeprom(PosBase + RF_BYTE_LO);
 			DirRF[x][y].Bytes.Mi = read_eeprom(PosBase + RF_BYTE_MI);
 			DirRF[x][y].Bytes.Hi = read_eeprom(PosBase + RF_BYTE_HI);
