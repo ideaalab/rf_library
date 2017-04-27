@@ -152,6 +152,7 @@ byte x = 0;
 */
 short LeerMandos(void){
 	short Mando = FALSE;
+	int PosBase = 0;
 	
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la lectura
 	
@@ -173,9 +174,11 @@ short LeerMandos(void){
 	for(int x = 0; x<NUM_MANDOS_RF; x++){
 		for(int y = 0; y<NUM_CANALES_RF; y++){
 			DirRF[x][y].Completo = 0;
-			DirRF[x][y].Bytes.Lo = read_eeprom(POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES) + RF_BYTE_LO);
-			DirRF[x][y].Bytes.Mi = read_eeprom(POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES) + RF_BYTE_MI);
-			DirRF[x][y].Bytes.Hi = read_eeprom(POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES) + RF_BYTE_HI);
+			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
+			
+			DirRF[x][y].Bytes.Lo = read_eeprom(PosBase + RF_BYTE_LO);
+			DirRF[x][y].Bytes.Mi = read_eeprom(PosBase + RF_BYTE_MI);
+			DirRF[x][y].Bytes.Hi = read_eeprom(PosBase + RF_BYTE_HI);
 			
 			//si el mando leido es diferente a 0xFFFFFF quiere decir que hay algo grabado
 			if((DirRF[x][y].Completo != 0) && (DirRF[x][y].Completo != 0xFFFFFF)){
