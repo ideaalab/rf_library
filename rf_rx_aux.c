@@ -194,7 +194,7 @@ short LeerMandos(void){
  * Borra todos los mandos sincronizados
  */
 void BorrarMandos(void){
-	for(int x = POS_MEM_MANDOS_START_RF; x <= RF_LAST_VALUE; x++){
+	for(int x = POS_MEM_MANDOS_START_RF; x < (POS_MEM_MANDOS_END_RF + 1); x++){
 		write_eeprom(x, 0xFF);
 	}
 }
