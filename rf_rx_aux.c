@@ -151,6 +151,7 @@ void GrabarMando(void){
 /*
  * Misma funcion que la de arriba, pero a esta hay que pasarle
  * los valores a grabar en la EEPROM.
+ * Se llama asi: GrabarMando(&Recibido);
  * Es menos eficiente:
  * Graba direcciones: x de ROM
  * Graba mandos: 145 de ROM
