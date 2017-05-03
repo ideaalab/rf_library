@@ -66,6 +66,7 @@
 /*
  * Interrupcion del timer 2
  * Se usa para simular pulsacion mantenida por RF
+ * Ocupa 13 de ROM
  */
 #int_TIMER2
 void Timer2_isr(void){
@@ -75,17 +76,13 @@ void Timer2_isr(void){
 			ContMantenidoTimeOut = 0;
 			LED = FALSE;
 			RFmantenido = FALSE;
-			//lo de abajo se puede quitar?
-			/*RecibAnterior.Completo = 0;
-			Recibido.Completo = 0;
-			rfBuffer.Completo = 0;
-			CountedBits = 0;*/
 		}
 	}
 }
 
 /*
  * Configura el Timer 2 para interrumpir cada 10mS
+ * Ocupa 13 de ROM
  */
 void RF_mantenido_init(void){
 #IF getenv("CLOCK") == 4000000
@@ -123,7 +120,9 @@ void RF_mantenido_init(void){
 
 /*
  * Esta funcion toma los datos a grabar de la variable Recibido.
- * Es mas eficiente, ocupa 25 palabras menos que la funcion de abajo.
+ * Es mas eficiente:
+ * Graba direcciones: x de ROM
+ * Graba mandos: 120 de ROM
  */
 void GrabarMando(void){
 	int x = 0;
@@ -152,7 +151,9 @@ void GrabarMando(void){
 /*
  * Misma funcion que la de arriba, pero a esta hay que pasarle
  * los valores a grabar en la EEPROM.
- * Es menos eficiente, ocupa 25 palabras mas
+ * Es menos eficiente:
+ * Graba direcciones: x de ROM
+ * Graba mandos: 145 de ROM
  */
 void GrabarMando(rfRemote* RemoteAddr){
 	int x = 0;
@@ -181,10 +182,15 @@ void GrabarMando(rfRemote* RemoteAddr){
 /*
  * Lee los mandos de la EEPROM y los almacena en DirRF[]
  * Devuelve TRUE si hay algun mando configurado
+ * Uso de ROM:
+ * Lee direcciones: x de ROM
+ * Lee mandos de 1CH: 194 de ROM
+ * Lee mandos de > 1CH: 254 de ROM
 */
 short LeerMandos(void){
 	short Mando = FALSE;
 	int PosBase = 0;
+	int x;
 	
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la lectura
 	
@@ -192,7 +198,7 @@ short LeerMandos(void){
 	
 //lee los mandos
 #ifdef GRABAR_DIRECCIONES
-	for(int x = 0; x<NUM_MANDOS_RF; x++){
+	for(x = 0; x<NUM_MANDOS_RF; x++){
 		PosBase = POS_MEM_MANDOS_START + (x*POS_TO_JUMP);
 		DirRF[x].Completo = 0;
 		DirRF[x].Bytes.Lo = read_eeprom(PosBase + RF_ADDR_LO);
@@ -204,7 +210,24 @@ short LeerMandos(void){
 		}
 	}
 #else
-	for(int x = 0; x<NUM_MANDOS_RF; x++){
+	//optimizado para mandos de 1CH
+	#if NUM_CANALES_RF == 1
+	for(x = 0; x<NUM_MANDOS_RF; x++){
+		PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
+
+		DirRF[x][0].Completo = 0;
+		DirRF[x][0].Bytes.Lo = read_eeprom(PosBase + RF_BYTE_LO);
+		DirRF[x][0].Bytes.Mi = read_eeprom(PosBase + RF_BYTE_MI);
+		DirRF[x][0].Bytes.Hi = read_eeprom(PosBase + RF_BYTE_HI);
+
+		//si el mando leido es diferente a 0xFFFFFF quiere decir que hay algo grabado
+		if((DirRF[x][0].Completo != 0) && (DirRF[x][0].Completo != 0xFFFFFF)){
+			Mando = TRUE;
+		}
+	}
+	//para mandos de mas de 1CH
+	#else
+	for(x = 0; x<NUM_MANDOS_RF; x++){
 		for(int y = 0; y<NUM_CANALES_RF; y++){
 			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
 			
@@ -219,6 +242,7 @@ short LeerMandos(void){
 			}
 		}
 	}
+	#endif
 #endif
 	
 	enable_interrupts(GLOBAL);
@@ -228,6 +252,7 @@ short LeerMandos(void){
 
 /*
  * Borra todos los mandos sincronizados
+ * Ocupa 37 de ROM
  */
 void BorrarMandos(void){
 	disable_interrupts(GLOBAL);
