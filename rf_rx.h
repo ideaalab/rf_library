@@ -20,6 +20,10 @@
 #include "rf_remotes.h"
 
 /* COMPROBACIONES DE COMPATIBILIDAD */
+#if getenv("CLOCK") == 4000000
+#warning "Las pruebas sugieren que el receptor no funciona a 4Mhz"
+#endif
+
 #ifdef RF_TIMER0
 	#error Cambiar RF_TIMER0 por RF_RX_TIMER0
 #endif
