@@ -195,10 +195,9 @@ short LeerMandos(void){
 	
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la lectura
 	
-#warning "Comprobar"
-	
 //lee los mandos
 #ifdef GRABAR_DIRECCIONES
+#warning "Comprobar"
 	for(x = 0; x<NUM_MANDOS_RF; x++){
 		PosBase = POS_MEM_MANDOS_START + (x*POS_TO_JUMP);
 		DirRF[x].Completo = 0;
@@ -228,6 +227,7 @@ short LeerMandos(void){
 	}
 	//para mandos de mas de 1CH
 	#else
+#warning "Comprobar"
 	for(x = 0; x<NUM_MANDOS_RF; x++){
 		for(int y = 0; y<NUM_CANALES_RF; y++){
 			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
