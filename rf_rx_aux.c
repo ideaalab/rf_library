@@ -120,19 +120,22 @@ void RF_mantenido_init(void){
  * | | | | | | v    
  * 0 1 2 3 4 5 6 7 8
 */
+
+/*
+ * Esta funcion toma los datos a grabar de la variable Recibido.
+ * Es mas eficiente, ocupa 25 palabras menos que la funcion de abajo.
+ */
 void GrabarMando(void){
 	int x = 0;
 
-#warning "En vez de grabar el valor de -Recibido- se puede pasar el valor a grabar a la funcion?"
-#warning "Comprobar que funciona correctamente"
-
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
 	
-	for(x = FIRST_POS_TO_MOVE; (x >= LAST_POS_TO_MOVE)&&(x<=FIRST_POS_TO_MOVE); x--){
+	for(x = FIRST_POS_TO_MOVE; (x >= LAST_POS_TO_MOVE)&&(x <= FIRST_POS_TO_MOVE); x--){
 		write_eeprom(x+POS_TO_JUMP, read_eeprom(x));
 	}
 	
 #ifdef GRABAR_DIRECCIONES
+#warning "Comprobar que funciona correctamente"
 	//graba la direccion recibida en la primera posicion (2 bytes)
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, Recibido.Bytes.Lo);	//Ch4.AddrLo
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, Recibido.Bytes.Mi);	//Ch4.AddrHi
@@ -141,6 +144,35 @@ void GrabarMando(void){
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_LO, Recibido.Bytes.Lo);	//Ch4.AddrLo
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_MI, Recibido.Bytes.Mi);	//Ch4.AddrHi
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_HI, Recibido.Bytes.Hi);	//Ch4.Dat
+#endif
+	
+	enable_interrupts(GLOBAL);
+}
+
+/*
+ * Misma funcion que la de arriba, pero a esta hay que pasarle
+ * los valores a grabar en la EEPROM.
+ * Es menos eficiente, ocupa 25 palabras mas
+ */
+void GrabarMando(rfRemote* RemoteAddr){
+	int x = 0;
+
+	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
+	
+	for(x = FIRST_POS_TO_MOVE; (x >= LAST_POS_TO_MOVE)&&(x <= FIRST_POS_TO_MOVE); x--){
+		write_eeprom(x+POS_TO_JUMP, read_eeprom(x));
+	}
+	
+#ifdef GRABAR_DIRECCIONES
+#warning "Comprobar que funciona correctamente"
+	//graba la direccion recibida en la primera posicion (2 bytes)
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, RemoteAddr->Bytes.Lo);	//Ch4.AddrLo
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, RemoteAddr->Bytes.Mi);	//Ch4.AddrHi
+#else
+	//graba el canal recibido en la primera posicion (3 bytes)
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_LO, RemoteAddr->Bytes.Lo);	//Ch4.AddrLo
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_MI, RemoteAddr->Bytes.Mi);	//Ch4.AddrHi
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_HI, RemoteAddr->Bytes.Hi);	//Ch4.Dat
 #endif
 	
 	enable_interrupts(GLOBAL);

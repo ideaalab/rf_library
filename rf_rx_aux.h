@@ -84,6 +84,7 @@ int ContMantenidoTimeOut = 0;
 
 /* PROTOTIPOS */
 void GrabarMando(void);
+void GrabarMando(rfRemote* RemoteAddr);
 short LeerMandos(void);
 void BorrarMandos(void);
 
