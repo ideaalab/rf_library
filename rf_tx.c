@@ -123,7 +123,7 @@ void Send_Sync(){	//Envia un SYNC
 	//delay_cycles(3);
 }
 
-void Send_TX(rfBuff Data){
+void Send_TX(rfRemote Data){
 int x, y;
 
 	for(x=0; x<4;x++){		//repite la emision 4 veces

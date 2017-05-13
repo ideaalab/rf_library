@@ -149,8 +149,8 @@ typedef union{
 	
 	//bytes
 	struct{
-		int Lo;	//bits 0-7
-		int Hi;	//bits 8-15
+		int Lo;		//bits 0-7
+		int Hi;		//bits 8-15
 	}Bytes;
 	
 	//entero
@@ -185,7 +185,7 @@ typedef union{
 				int AddrHi;	//bits 8-15
 			};
 			
-			long Addr;	//bits 0-15
+			long Addr;		//bits 0-15
 		};
 		
 		//datos
@@ -243,7 +243,7 @@ typedef union{
 			int DatHi;		//bits 16-23
 		};
 		
-		int Nul;		//bits 24-31
+		int Nul;			//bits 24-31
 	}Ch6;	//6 ch remote
 
 	/* 8CH */
@@ -268,11 +268,11 @@ typedef union{
 		//datos
 		int Dat;		//bits 16-23
 
-		int Nul;			//bits 24-32
+		int Nul;		//bits 24-32
 	}Ch8;	//8 ch remote
 	
 	/* SPECIAL REMOTE */
-	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) �esta bien?
+	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) ¿esta bien?
 	struct{
 		int AddrLo;		//bits 0-7
 		int AddrHi:4;	//bits 8-11
@@ -283,7 +283,7 @@ typedef union{
 	}Especial;	//special remote
 	
 	/* SENSOR REMOTE */
-	//A0 A1 A2 A3 A4 A5 T0 T1 V0 V1 V2 V3 (orden de los datos recibidos, cada uno son 2 bits, V3 es MSB) �esta bien?
+	//A0 A1 A2 A3 A4 A5 T0 T1 V0 V1 V2 V3 (orden de los datos recibidos, cada uno son 2 bits, V3 es MSB) ¿esta bien?
 	struct{
 		int AddrLo;		//bits 0-7
 		int AddrHi:4;	//bits 8-11
@@ -294,14 +294,14 @@ typedef union{
 	
 	/* BYTES */
 	struct{	
-		int Lo;	//bits 0-7
-		int Mi;	//bits 8-15	
-		int Hi;		//bits 16-23
-		int Nul;	//bits 24-31
+		int Lo;			//bits 0-7
+		int Mi;			//bits 8-15	
+		int Hi;			//bits 16-23
+		int Nul;		//bits 24-31
 	}Bytes;	//4 bytes
 
 	/* BITS */
-	short Bits[32];	//32 bits
+	short Bits[32];		//32 bits
 	
 	/* COMPLETE */
 	int32 Completo;
