@@ -134,7 +134,7 @@ void GrabarMando(void){
 	}
 	
 #ifdef GRABAR_DIRECCIONES
-#warning "Comprobar que funciona correctamente"
+#warning "Comprobar"
 	//graba la direccion recibida en la primera posicion (2 bytes)
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, Recibido.Bytes.Lo);	//Ch4.AddrLo
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, Recibido.Bytes.Mi);	//Ch4.AddrHi
@@ -166,7 +166,7 @@ void GrabarMando(rfRemote* RemoteAddr){
 	}
 	
 #ifdef GRABAR_DIRECCIONES
-#warning "Comprobar que funciona correctamente"
+#warning "Comprobar"
 	//graba la direccion recibida en la primera posicion (2 bytes)
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, RemoteAddr->Bytes.Lo);	//Ch4.AddrLo
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, RemoteAddr->Bytes.Mi);	//Ch4.AddrHi
@@ -199,13 +199,12 @@ short LeerMandos(void){
 #ifdef GRABAR_DIRECCIONES
 #warning "Comprobar"
 	for(x = 0; x<NUM_MANDOS_RF; x++){
-		PosBase = POS_MEM_MANDOS_START + (x*POS_TO_JUMP);
-		DirRF[x].Completo = 0;
-		DirRF[x].Bytes.Lo = read_eeprom(PosBase + RF_ADDR_LO);
-		DirRF[x].Bytes.Hi = read_eeprom(PosBase + RF_ADDR_HI);
+		PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
+		DirRF[x].AddrLo = read_eeprom(PosBase + RF_ADDR_LO);
+		DirRF[x].AddrHi = read_eeprom(PosBase + RF_ADDR_HI);
 
-		//si el mando leido es diferente a 0xFFFFFF quiere decir que hay algo grabado
-		if((DirRF[x][y].Completo != 0) && (DirRF[x].Completo != 0xFFFFFF)){
+		//si la direccion leida es diferente a 0xFFFF quiere decir que hay algo grabado
+		if(DirRF[x].Addr != 0){
 			Mando = TRUE;
 		}
 	}

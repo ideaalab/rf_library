@@ -1,52 +1,136 @@
-//-------------------------------------------------------------------------------
-//		-->		rfRemote is where the data is buffered. For ease of coding
-//				rfRemote is 32bits wide, but only 24 are used, and 8 is waste.
-//
-//		-->		Data can be accessed like this:
-//				rfRemote.
-//						Ch4.
-//							Addr	16bit
-//							D0		2bit
-//							D1		2bit
-//							D2		2bit
-//							D3		2bit
-//							Nul		8bit
-//						Ch4.
-//							Addr	16bit
-//							Dat		8bit
-//							Nul		8bit
-//						Ch6.
-//							AddrLo	8bit
-//							AddrHi	4bit
-//							DatLo	8bit
-//							DatHi	4bit
-//							Nul		8bit
-//						Especial.
-//							AddrLo	8bit
-//							AddrHi	4bit
-//							Typ		4bit
-//							Dat		4bit
-//							Com		4bit
-//							Nul		8bit
-//						Sen.
-//							AddrLo	8bit
-//							AddrHi	4bit
-//							Typ		4bit
-//							Val		8bit
-//							Nul		8bit
-//						Bytes.
-//							Lo		8bit
-//							Mi		8bit
-//							Hi		8bit
-//							Nul		8bit
-//						bits[x]					(32)
-//						Completo				(32)
-//
-//				Trinary data uses 2 bits to represent 0, 1 & floating.
-//				0 = 00
-//				1 = 11
-//				f = 01
-//-------------------------------------------------------------------------------
+/* -----------------------------------------------------------------------------
+ *	>	rfAddr es un tipo de variable que permite almacenar direcciones RF.
+ *		Ocupa 2 bytes cada direccion
+ * 
+ *	>	rfRemote es un tipo de variable que permite almacenar una trama
+ *		entera de RF. Para facilitar la programacion rfRemote ocupa 4 bytes
+ *		(32 bits) pero solo se utilizan 3 bytes (24 bits) y el resto se desperdicia
+ * 
+ *	>	En mandos y receptores de codigo fijo se usa la siguiente convencion
+ *		trinaria para los pines:
+ *			Pin a Gnd		= 00
+ *			Pin a Vdd		= 11
+ *			Pin flotando	= 01
+ * 
+ *	>	Se puede acceder a los datos de la siguiente manera:
+ * 
+ *			rfAddr Direccion;	//declaracion de nueva variable
+ *			rfRemote Mando;		//declaracion de nueva variable
+ * 
+ *				rfAddr.
+ *						A0			bits 0-1
+ *						A1			bits 2-3
+ *						A2			bits 4-5
+ *						A3			bits 6-7
+ *						A4			bits 8-9
+ *						A5			bits 10-11
+ *						A6			bits 12-13
+ *						A7			bits 14-15
+ * 
+ *						AddrLo		bits 0-7
+ *						AddrHi		bits 8-15
+ * 
+ *						Addr		bits 0-15
+ * 
+ *						Bits[16]	16 bits
+ * 
+ *				rfRemote.
+ *						Ch4.	---------
+ *							A0			bits 0-1
+ *							A1			bits 2-3
+ *							A2			bits 4-5
+ *							A3			bits 6-7
+ *							A4			bits 8-9
+ *							A5			bits 10-11
+ *							A6			bits 12-13
+ *							A7			bits 14-15
+ * 
+ *							AddrLo		bits 0-7
+ *							AddrHi		bits 8-15
+ * 
+ *							Addr		bits 0-15
+ * 
+ *							D3			bits 16-17
+ *							D2			bits 18-19
+ *							D1			bits 20-21
+ *							D0			bits 22-23
+ * 
+ *							Dat			bits 16-23
+ *							
+ *							Nul			bits 24-31
+ *
+ *						Ch6.	---------
+ *							A0			bits 0-1
+ *							A1			bits 2-3
+ *							A2			bits 4-5
+ *							A3			bits 6-7
+ *							A4			bits 8-9
+ *							A5			bits 10-11
+ * 
+ *							AddrLo		bits 0-7
+ *							AddrHi		bits 8-11
+ * 
+ *							D5			bits 12-13
+ *							D4			bits 14-15
+ *							D3			bits 16-17
+ *							D2			bits 18-19
+ *							D1			bits 20-21
+ *							D0			bits 22-23
+ * 
+ *							DatLo		bits 12-15
+ *							DatHi		bits 16-23
+ *							
+ *							Nul			bits 24-31
+ * 
+ *						Ch8.	---------
+ *							A0			bits 0-1
+ *							A1			bits 2-3
+ *							A2			bits 4-5
+ *							A3			bits 6-7
+ *							A4			bits 8-9
+ *							A5			bits 10-11
+ *							A6			bits 12-13
+ *							A7			bits 14-15
+ * 
+ *							AddrLo		bits 0-7
+ *							AddrHi		bits 8-15
+ * 
+ *							Addr		bits 0-15
+ * 
+ *							D3			bits 16-17
+ *							D2			bits 18-19
+ *							D1			bits 20-21
+ *							D0			bits 22-23
+ * 
+ *							Dat			bits 16-23
+ *							
+ *							Nul			bits 24-31
+ * 
+ *						Especial.	---------
+ *							AddrLo		bits 0-7
+ *							AddrHi		bits 8-11
+ *							Typ			bits 12-15
+ *							Dat			bits 16-19
+ *							Com			bits 20-23
+ *							Nul			bits 24-31
+ *
+ *						Sens.	---------
+ *							AddrLo		bits 0-7
+ *							AddrHi		bits 8-11
+ *							Typ			bits 12-15
+ *							Val			bits 16-23
+ *							Nul			bits 24-31
+ * 
+ *						Bytes.	---------
+ *							Lo			bits 0-7
+ *							Mi			bits 8-15
+ *							Hi			bits 16-23
+ *							Nul			bits 24-31
+ * 
+ *						Bits[x]			bits 0-31 independientes
+ * 
+ *						Completo		bits 0-31
+ ---------------------------------------------------------------------------- */
 
 #ifndef RF_REMOTES_H
 #define	RF_REMOTES_H
@@ -149,12 +233,12 @@ typedef union{
 	
 	//bytes
 	struct{
-		int Lo;		//bits 0-7
-		int Hi;		//bits 8-15
-	}Bytes;
+		int AddrLo;		//bits 0-7
+		int AddrHi;		//bits 8-15
+	};
 	
 	//entero
-	long Completo;	//bits 0-15
+	long Addr;	//bits 0-15
 	
 	//bits
 	short Bits[16];	//16 bits
@@ -179,7 +263,6 @@ typedef union{
 				int A7:2;	//bits 14-15
 			};
 			
-#warning "Este struct es nuevo, ver si funciona"
 			struct{
 				int AddrLo;	//bits 0-7
 				int AddrHi;	//bits 8-15
@@ -218,6 +301,7 @@ typedef union{
 			int AddrLo;		//bits 0-7
 		};
 		
+		//direccion y datos
 		union{
 			struct{
 				int A4:2;	//bits 8-9
@@ -232,6 +316,7 @@ typedef union{
 			};
 		};
 		
+		//datos
 		union{
 			struct{
 				int D3:2;	//bits 16-17
@@ -262,17 +347,31 @@ typedef union{
 				int A7:2;	//bits 14-15
 			};
 			
+			struct{
+				int AddrLo;	//bits 0-7
+				int AddrHi;	//bits 8-15
+			};
+			
 			long Addr;	//bits 0-15
 		};
 		
 		//datos
-		int Dat;		//bits 16-23
+		union{
+			struct{
+				int D3:2;	//bits 16-17
+				int D2:2;	//bits 18-19
+				int D1:2;	//bits 20-21
+				int D0:2;	//bits 22-23
+			};
+			
+			int Dat;		//bits 16-23
+		};
 
 		int Nul;		//bits 24-32
 	}Ch8;	//8 ch remote
 	
 	/* SPECIAL REMOTE */
-	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) Â¿esta bien?
+	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) ¿esta bien?
 	struct{
 		int AddrLo;		//bits 0-7
 		int AddrHi:4;	//bits 8-11

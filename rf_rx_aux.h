@@ -56,7 +56,7 @@
 #ifdef GRABAR_DIRECCIONES	//se graban solo direcciones (2 bytes))
 #warning "Comprobar si esta bien"
 #define FIRST_POS_TO_MOVE		(POS_MEM_MANDOS_START_RF + ((NUM_MANDOS_RF - 1) * RF_SAVE_BYTES) - 1)
-#define POS_TO_JUMP				(RF_SAVE_BYTES))
+#define POS_TO_JUMP				(RF_SAVE_BYTES)
 #define	POS_MEM_MANDOS_END_RF	(POS_MEM_MANDOS_START_RF + (NUM_MANDOS_RF * RF_SAVE_BYTES) - 1)
 #else						//se graban los canales
 #define FIRST_POS_TO_MOVE		(POS_MEM_MANDOS_START_RF + ((NUM_MANDOS_RF - 1) * NUM_CANALES_RF * RF_SAVE_BYTES) - 1)
@@ -73,9 +73,9 @@ int ButtonMatch[NUM_MANDOS_RF];//indica que botones se presionaron de cada mando
 rfAddr DirRF[NUM_MANDOS_RF];	//direcciones de los mandos almacenados
 #else
 rfRemote DirRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/botones almacenados
+#endif
 rfRemote RecibAnterior;							//anterior direccion recibida
 rfRemote Recibido;								//ultima direccion recibida
-#endif
 
 #ifdef RF_MANTENIDO
 short RFmantenido = false;
