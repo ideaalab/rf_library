@@ -25,14 +25,16 @@
 #endif
 
 #ifdef RF_MANTENIDO
-#warning Se detectara cuando se mantiene presionado un boton del mando
+#warning "Se detecta cuando se mantiene presionado un boton del mando"
 
-#define T_T2					10	//interrupcion timer 2 en mS
-#define TMP_SIN_RF				200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido
-#define TIME_OUT_RF_MANTENIDO	(TMP_SIN_RF / T_T2)
+#define T_T2							10	//interrupcion timer 2 en mS
+#ifndef TIME_OUT_RF_MANTENIDO
+#define TIME_OUT_RF_MANTENIDO			200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido
+#endif
+#define VUELTAS_TIME_OUT_RF_MANTENIDO	(TIME_OUT_RF_MANTENIDO / T_T2)
 
 #else
-#warning No se detecta cuando se mantiene presionado un boton del mando
+#warning "No se detecta cuando se mantiene presionado un boton del mando"
 #endif
 
 /* DEFINES */
@@ -43,7 +45,7 @@
 #define RF_BYTE_MI	1
 #define RF_BYTE_HI	2
 
-//cuantos bytes de guardan por cada mando/canal
+//cuantos bytes se guardan por cada mando/canal
 #ifdef GRABAR_DIRECCIONES
 #define RF_SAVE_BYTES	2
 #else
@@ -70,23 +72,39 @@ short flagSync = false;		//indica si estamos grabando un mando
 int ButtonMatch[NUM_MANDOS_RF];//indica que botones se presionaron de cada mando (max 8 botones por mando, 1bit cada boton)
 
 #ifdef GRABAR_DIRECCIONES
-rfAddr DirRF[NUM_MANDOS_RF];	//direcciones de los mandos almacenados
+rfAddr MemRF[NUM_MANDOS_RF];	//direcciones de los mandos almacenados
 #else
-rfRemote DirRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/botones almacenados
+rfRemote MemRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/botones almacenados
 #endif
+
 rfRemote RecibAnterior;							//anterior direccion recibida
 rfRemote Recibido;								//ultima direccion recibida
 
-#ifdef RF_MANTENIDO
-short RFmantenido = false;
-int ContMantenidoTimeOut = 0;
+#if NUM_CANALES_RF > 1
+int SyncStep = 0;						//en que paso de sincronizacion estamos
+rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias direcciones RF y poder sincronizar todos los canales al mismo tiempo
 #endif
 
-/* PROTOTIPOS */
+#ifdef RF_MANTENIDO
+short RFmantenido = false;
+int ContTimeOutRFmantenido = 0;
+#endif
+
+/* PROTOTIPOS PUBLICOS */
+void RF_mantenido_init(void);
+short AnalizarRF(void);
+short AnalizarRF(rfRemote* c);
 void GrabarMando(void);
-void GrabarMando(rfRemote* RemoteAddr);
+void GrabarMando(rfRemote* DatosRF);
+#if NUM_CANALES_RF > 1
+void GrabarBloqueMandos(void);
+void GrabarBloqueMandos(rfRemote* DatosRF);
+#endif
 short LeerMandos(void);
 void BorrarMandos(void);
+/* PROTOTIPOS PRIVADOS */
+void Timer2_isr(void);
+void MoverBloque(int from, int to, int offset);
 
 #endif	/* RF_RX_AUX_H */
 
