@@ -6,7 +6,7 @@
  * Cada vez que se reciba una trama correcta de RF y coincida con un mando hay
  * que poner a 0 la variable ContMantenidoTimeOut
  * El mantenido NO FUNCIONA BIEN CON CIRCUITOS DE SERVOS ya que introducen mucho
- * ruido y el receptor no consigue decodificar bien la seÃ±al, provocando "ausencia"
+ * ruido y el receptor no consigue decodificar bien la señal, provocando "ausencia"
  * de tramas correctas.
  */
 #ifdef RF_MANTENIDO
@@ -105,6 +105,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	}
 	
 	#ifdef RF_MANTENIDO
+	RFmantenido = Match;
 	set_timer2(0);
 	ContTimeOutRFmantenido = 0;
 	#endif
@@ -171,6 +172,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	}
 	
 	#ifdef RF_MANTENIDO
+	RFmantenido = Match;
 	set_timer2(0);
 	ContTimeOutRFmantenido = 0;
 	#endif
