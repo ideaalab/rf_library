@@ -1,138 +1,3 @@
-/*
- * QUE HACE ESTA LIBRERIA?
- * 
- * #Permite leer y grabar mandos en la memoria EEPROM
- * #Permite grabar solo la direccion del mando (2 bytes) y los canales se
- * deducen de la trama de datos recibida.
- * #Permite grabar toda la trama de datos como un canal (3 bytes)
- * #Permite saber si se mantiene presionado el boton de un mando
- * #Permite mover bloques de direcciones dentro de la EEPROM
- * =============================================================================
- * INTRODUCCION
- * 
- * #Se entiende por MANDO a un contenedor de CANALES. Cada mando puede tener uno
- * o mas canales.
- * -En el caso de almacenar solo la direccion, los canales siempre pertenecen al
- * mando fisico, ya que se deducen de la trama de datos.
- * -En el caso de almacenar toda la trama como si fuese un canal, cada mando se
- * podria entender como un "mando virtual", ya que creamos un mando donde los
- * canales pueden pertenecer fisicamente a varios mandos diferentes.
- * Es decir, si tenemos MemRF[1][2] los canales 1 y 2 del mando 1 pueden ser de
- * dos mandos fisicamente diferentes, pero estan unidos en este "mando virtual".
- * 
- * #Los mandos/canales se almacenan en la variable:
- * -MemRF[Mando]: ocupa 2 bytes * NUM_MANDOS_RF
- * -MemRF[Mando][Canal]: ocupa 3 bytes * NUM_CANALES_RF * NUM_MANDOS
- * =============================================================================
- * COMO SE ALMACENAN LOS MANDOS?
- * 
- * Se pueden almacenar mandos y canales de dos maneras:
- * 
- * --- DIRECCION DEL MANDO ---
- * -Solo se almacena la direccion del mando, y los canales de deducen de la
- * trama RF recibida
- * MemRF[Mando] (2 bytes c/u, los canales dependen de como se interprete la trama)
- * 
- * Ej: MemRF[3] (3 mandos)
- * MemRF[0]: [M1]
- * MemRF[1]: [M2]
- * MemRF[2]: [M3]
- * 
- * --- TRAMA COMPLETA ---
- * -Cada canal como un mando nuevo. Almacena la trama RF entera para cada canal
- * MemRF[Mando][Canal] (3 bytes c/u)
- * 
- * Ej: MemRF[3][4] (3 mandos de 4ch c/u)
- * MemRF	 [x][0]		 [x][1]		 [x][2]		 [x][3]
- * [0][y]:	[M1/Ch1]	[M1/Ch2]	[M1/Ch3]	[M1/Ch4]
- * [1][y]:	[M2/Ch1]	[M2/Ch2]	[M2/Ch3]	[M2/Ch4]
- * [2][y]:	[M3/Ch1]	[M3/Ch2]	[M3/Ch3]	[M3/Ch4]
- * 
- * Ej: MemRF[5][1] (5 mandos de 1ch cada uno)
- * MemRF	[x][0]
- * [0][0]: [M1/Ch1]
- * [1][0]: [M1/Ch2]
- * [2][0]: [M1/Ch3]
- * [3][0]: [M1/Ch4]
- * [4][0]: [M1/Ch5]
- * =============================================================================
- * COMO CONFIGURAR LA LIBRERIA?
- * 
- * #Esta libreria depende de rf_rx.c
- * 
- * #Hay que declarar un define POS_MEM_MANDOS_START_RF que indica donde
- * comienzan a escribirse los mandos en la EEPROM
- * #define POS_MEM_MANDOS_START_RF	10
- * 
- * #Hay que declarar un define NUM_MANDOS_RF que indique cuantos mandos
- * se pueden memorizar
- * #define NUM_MANDOS_RF	3
- * 
- * #Se puede declarar un define NUM_CANALES_RF que indique cuantos canales 
- * tiene cada mando. Si se declara NUM_CANALES_RF se asume que se graban los
- * canales de manera independiente.
- * #define NUM_CANALES_RF	4
- * 
- * #Si se quiere usar la funcion de "mantener" el boton del mando, hay que
- * declarar un define RF_MANTENIDO. RF_MANTENIDO usa el timer2
- * #define RF_MANTENIDO
- * 
- * #Desde que se recibe la señal RF_MANTENIDO espera otra señal como maximo 200mS.
- * Despues de ese tiempo se considera que el boton del mando se "solto". Si se
- * quiere usar otro tiempo hay que declarar TIME_OUT_RF_MANTENIDO con el valor
- * deseado en mS. Este valor mientras mayor es, mas tolerante se vuelve a cortes
- * e interferencias en la recepcion, pero tambien introduce mas retardo en la
- * recepcion.
- * #define TIME_OUT_RF_MANTENIDO	500
- * 
- * #Llamar a la funcion RF_mantenido_init() al inicio del programa para que se
- * detecte cuando se mantiene un canal.
- * 
- * =============================================================================
- * VARIABLES
- * 
- * -Recibido: almacena la ultima trama de datos recibida
- * -RecibAnterior: almacena la trama de datos anterior recibida. Sirve para
- * compararla con "Recibido" y ver si son iguales. Util para sincronizar.
- * -MemRF[x] / MemRF[x][y]: contiene los mandos que se han sincronizado y
- * guardado en la EEPROM. Es unidimensional (x: mando) cuando solo se guarda la
- * direccion, y es bidimensional (x: mando, y: canal) cuando se guarda toda la
- * trama como canal independiente.
- * -ButtonMatch[x]: contiene los canales activos que se han recibido. Los bits
- * independientes indican los canales activos y "x" los mandos
- * -flagSync: indica si estamos en modo sincronizacion
- * -SyncStep: cuando estamos grabando varios canales, esta variable nos indica
- * en que paso de sincronizacion estamos.
- * -MandoVirtual[x]: Sirve para sincronizar varios mandos a la vez. Es
- * equivalente a un "mando virtual" que consta de "x" canales. Se almacena cada
- * canal como una trama de datos completa. Una vez que se ha llenado con los
- * canales a sincronizar. Esta variable la usa la funcion GrabarBloqueMandos().
- * =============================================================================
- * FUNCIONES
- * 
- * - RF_mantenido_init(): inicializa los perifericos necesarios para poder
- * detectar cuando un canal RF se esta manteniendo.
- * -AnalizarRF(rfRemote): compara los datos recibidos con el contenido de MemRF.
- * Guarda las coincidencias en ButtonMatch[]. Devuelve TRUE si hubo alguna
- * coincidencia.
- * - GrabarMando(): mueve todos los mandos grabados una posicion (2 o 3 bytes
- * para atras y graba el mando que este en la variable "Recibido". El mando mas
- * antiguo se pierde.
- * - GrabarMando(rfRemote): igual que la anterior, pero se le pasa la direccion
- * de la variable que queremos que se grabe en vez de utilizar el valor que esta
- * en "Recibido".
- * EJ: GrabarMando(&Recibido);
- * - GrabarBloqueMandos(): graba todos los canales a la vez. Los valores
- * grabados son los que hay en MandoVirtual.
- * - GrabarBloqueMandos(rfRemote): graba todos los canales a la vez. Hay que
- * pasarle la direccion de una variable que contenga todos los canales a grabar.
- * EJ: GrabarBloqueMandos(&MandoVirtual);
- * - LeerMandos(): lee todos los mandos que hay en la EEPROM y los almacena en
- * MemRF[x] / MemRF[x][y]
- * -BorrarMandos(): borra la EEPROM de todos los mandos que se habian guardado
- * previamente. Tambien limpia la variable MemRF
- * ---------------------------------------------------------------------------*/
-
 #include "rf_remotes.h"
 #include "rf_rx_aux.h"
 
@@ -141,7 +6,7 @@
  * Cada vez que se reciba una trama correcta de RF y coincida con un mando hay
  * que poner a 0 la variable ContMantenidoTimeOut
  * El mantenido NO FUNCIONA BIEN CON CIRCUITOS DE SERVOS ya que introducen mucho
- * ruido y el receptor no consigue decodificar bien la seÃ±al, provocando "ausencia"
+ * ruido y el receptor no consigue decodificar bien la seÃƒÂ±al, provocando "ausencia"
  * de tramas correctas.
  */
 #ifdef RF_MANTENIDO
@@ -191,27 +56,38 @@ void RF_mantenido_init(void){
  * Utiliza los valores de la variable "Recibido" para comparar
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: x ROM
- * -4 Canales: 124 ROM
+ * -1 Canal: 80 ROM
+ * -1 Canal + Mantenido: 93 ROM
+ * -4 Canales: 106 ROM
+ * -4 Canales + Mantenido: 121 ROM
  */
 short AnalizarRF(void){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
 	ApagarRF();			//apago RF para que no interfieran las interrupciones
-
-#ifdef RF_MANTENIDO
-	ContTimeOutRFmantenido = 0;
-#endif
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
 #else
+
+	#ifdef RF_MANTENIDO
+	ContTimeOutRFmantenido = 0;
+	
+	//si se esta manteniendo un canal salgo de aqui
+	if(RFmantenido == TRUE){
+		set_timer2(0);
+		ContTimeOutRFmantenido = 0;
+		EncenderRF();	//vuelvo a enceder RF
+		return(FALSE);
+	}
+	#endif
+
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){
 		ButtonMatch[m] = 0;	//borro previas recepciones
 		
-//cuando solo hay un canal podemos optimizar el codigo
+	//cuando solo hay un canal podemos optimizar el codigo
 	#if NUM_CANALES_RF == 1
 		if(Recibido.Completo == MemRF[m][0].Completo){
 			bit_set(ButtonMatch[m], 0);	//marco el canal 1 de cada mando que se haya presionado
@@ -229,19 +105,12 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	}
 	
 	#ifdef RF_MANTENIDO
-	short Respuesta = Match && !RFmantenido; //solo devuelvo true si Match = TRUE y RFmantenido = FALSE
-	
-	if(Match == TRUE){
-		RFmantenido = TRUE;
-	}
 	set_timer2(0);
 	ContTimeOutRFmantenido = 0;
-	EncenderRF();	//vuelvo a enceder RF
-	return(Respuesta);
-	#else
+	#endif
+
 	EncenderRF();	//vuelvo a enceder RF
 	return(Match);
-	#endif
 #endif
 }
 
@@ -253,27 +122,38 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
  * Ej: AnalizarRF(&Recibido);
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: x ROM
- * -4 Canales: 141 ROM
+ * -1 Canal: 97 ROM
+ * -1 Canal + Mantenido: 110 ROM
+ * -4 Canales: 131 ROM
+ * -4 Canales + Mantenido: 146 ROM
  */
 short AnalizarRF(rfRemote* DatosRF){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
 	ApagarRF();			//apago RF para que no interfieran las interrupciones
-
-#ifdef RF_MANTENIDO
-	ContTimeOutRFmantenido = 0;
-#endif
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
 #else
+
+	#ifdef RF_MANTENIDO
+	ContTimeOutRFmantenido = 0;
+	
+	//si se esta manteniendo un canal salgo de aqui
+	if(RFmantenido == TRUE){
+		set_timer2(0);
+		ContTimeOutRFmantenido = 0;
+		EncenderRF();	//vuelvo a enceder RF
+		return(FALSE);
+	}
+	#endif
+	
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){
 		ButtonMatch[m] = 0;	//borro previas recepciones
 		
-//cuando solo hay un canal podemos optimizar el codigo
+	//cuando solo hay un canal podemos optimizar el codigo
 	#if NUM_CANALES_RF == 1
 		if(DatosRF->Completo == MemRF[m][0].Completo){
 			bit_set(ButtonMatch[m], 0);	//marco el canal 1 de cada mando que se haya presionado
@@ -291,29 +171,21 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	}
 	
 	#ifdef RF_MANTENIDO
-	short Respuesta = Match && !RFmantenido; //solo devuelvo true si Match = TRUE y RFmantenido = FALSE
-	
-	if(Match == TRUE){
-		RFmantenido = TRUE;
-	}
 	set_timer2(0);
 	ContTimeOutRFmantenido = 0;
-	EncenderRF();	//vuelvo a enceder RF
-	return(Respuesta);
-	#else
+	#endif
+
 	EncenderRF();	//vuelvo a enceder RF
 	return(Match);
-	#endif
 #endif
 }
 
 /*
- * Graba los 3 bytes del mando recibido en la memoria EEPROM
- * Utiliza los datos que haya en el buffer de recepcion
+ * Graba los 3 bytes del mando recibido en la memoria EEPROM.
  * La foma de grabar es como una pila FIFO. Primero se desplazan las memorias
  * ya guardadas una posicion hacia atras, y luego se graba el mando recibido
  * en la primera posicion. Asi la ultima se pierde.
- * Suponiendo: NUM_MANDOS=3, POS_MEM_MANDOS_START=0
+ * Suponiendo: NUM_MANDOS_RF=3, NUM_CANALES_RF=1, POS_MEM_MANDOS_START=0
  * 5>8, 4>7, 3>6, 2>5, 1>4, 0>3
  *      _____
  *    _|___  v_____
@@ -325,7 +197,6 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 
 /*
  * Esta funcion toma los datos a grabar de la variable Recibido.
- * Es mas eficiente:
  * Graba direcciones: x de ROM
  * Graba mandos: 131 de ROM
  */
@@ -350,10 +221,9 @@ void GrabarMando(void){
 }
 
 /*
- * Misma funcion que la de arriba, pero a esta hay que pasarle
- * los valores a grabar en la EEPROM.
+ * Misma funcion que la de arriba, pero a esta hay que pasarle los valores a
+ * grabar en la EEPROM. Es menos eficiente.
  * Se llama asi: GrabarMando(&Recibido);
- * Es menos eficiente:
  * Graba direcciones: x de ROM
  * Graba mandos: 156 de ROM
  */
@@ -409,7 +279,7 @@ void GrabarBloqueMandos(void){
  */
 void GrabarBloqueMandos(rfRemote* DatosRF){
 // https://stackoverflow.com/questions/13730786/c-pass-int-array-pointer-as-parameter-into-a-function
-#warning "El nombre de un array hace referencia a la primera direccion de ese array = &array[0], pero aqui no funciona"
+// El nombre de un array hace referencia a la primera direccion de ese array = &array[0], pero aqui no funciona
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
 	
 	MoverBloque(LAST_POS_TO_MOVE, FIRST_POS_TO_MOVE, POS_TO_JUMP);
@@ -435,7 +305,7 @@ void GrabarBloqueMandos(rfRemote* DatosRF){
  * Lee direcciones: x de ROM
  * Lee mandos de 1CH: 192 de ROM
  * Lee mandos de > 1CH: 254 de ROM
-*/
+ */
 short LeerMandos(void){
 	short Mando = FALSE;
 	int PosBase = 0;
