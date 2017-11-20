@@ -1,100 +1,46 @@
-//------------------------------------------------------------------------------
-//                    Receiver RF
-//
-// Description: Emulates Princeton Technology decoders:
-//				PT2270,	PT2272 & PT2294.
-//				Decodes encoded signals of:
-//				PT2240B, PT2260, PT2262 & PT2264.
-//
-//				On this encoders/decoders ZERO, ONE and SYNC are coded
-//				this way:
-//				ZERO: 25% duty pulse
-//				ONE: 75% duty pulse
-//				SYNC: 3.125% duty pulse
-//				
-//				--- Decoders ---
-//				*PT2270, PT2272, PT2294
-//				Period of cicle (ZERO & ONE) = 16 * ALFA
-//				Period of cicle (SYNC) = 128 * ALFA
-//
-//				--- Encoders ---
-//				*PT2262, PT2264
-//				Period of cicle (ZERO & ONE) = 16 * ALFA
-//				Period of cicle (SYNC) = 128 * ALFA
-//				
-//				*PT2240B
-//				Period of cicle (ZERO & ONE) = 128 * ALFA
-//				Period of cicle (SYNC) = 1024 * ALFA
-//				
-//				*PT2260
-//				Period of cicle (ZERO & ONE) = 512 * ALFA
-//				Period of cicle (SYNC) = 4096 * ALFA
-//
-//				ALFA = oscilator period of encoder/decoder.
-//				
-//				Encoder oscilation frequency should be 4 to 16 times
-//				grater than the decoder
-//
-//		-->		To use Timer0 define constant RF_RX_TIMER0 before calling
-//				library, otherwise Timer1 will be used
-//
-//		-->		To know total lenght of received pulses define constant RF_COUNT_TIME,
-//				check TotalTime value once DataReady() == TRUE to know total time of pulse
-//				
-//		-->		Declare RF_RX as #bit on INT_EXT pin of MCU
-//
-//		-->		To initialize use: EncenderRF()
-//
-//		-->		Use this in main loop to check if data received:
-//
-//				if(DataReady() == TRUE){			//check if there is new data
-//					//data received is on rfBuffer
-//					... execute instructions
-//				}
-//				
-//
-//------------------------------------------------------------------------------
-
 #include "rf_rx.h"
 
 // --- INT EXT ---
 #INT_EXT
 void EXT_isr(void) {
-//--------------------------------------------------------------------------------------
-#ifdef RF_RX_TIMER0	//using TIMER0 to count
+/* --- USAMOS TIMER0 PARA CONTAR --- */
+#ifdef RF_RX_TIMER0
 int Tmr0;
 	
 	disable_interrupts(INT_TIMER0);
 	Tmr0 = get_timer0();
 	
-	if(INTEDG == RISING){			//rising edge, pulse starts
-		TotalDuration = (Cycles * 256) + Tmr0;	//gets duration of last pulse
-		set_timer0(0);				//reset timer
-		Cycles = 0;					//reset cycles
-		flagPulse = TRUE;			//indicates that a complete pulse was received
+	//flanco ascendente -> comenzamos a contar
+	if(INTEDG == RISING){
+		TotalDuration = (Cycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
+		set_timer0(0);							//reset timer
+		Cycles = 0;								//reset cycles
+		flagPulse = TRUE;						//indica que hemos recibido un pulso completo
 	}
-	else{							//falling edge, ends HIGH part of the pulse
-		HighDuration = (Cycles * 256) + Tmr0;	//gets duration of the HIGH part
+	//flanco descendente -> termino la parte alta del pulso
+	else{
+		HighDuration = (Cycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
 	}
 	
 	enable_interrupts(INT_TIMER0);
-	INTEDG = !INTEDG;				//invert edge
-//--------------------------------------------------------------------------------------
-#else	//using TIMER1 to count
-	if(INTEDG == RISING){				//rising edge, pulse starts
-		TotalDuration = get_timer1();	//gets duration of last pulse
+	
+/* --- USAMOS TIMER1 PARA CONTAR --- */
+#else
+	//flanco ascendente -> comenzamos a contar
+	if(INTEDG == RISING){
+		TotalDuration = get_timer1();	//obtenemos duracion del ultimo pulso
 		set_timer1(0);					//reset timer
-		flagPulse = TRUE;				//indicates that a complete pulse was received
+		flagPulse = TRUE;				//indica que hemos recibido un pulso completo
 	}
-	else{								//falling edge, ends HIGH part of the pulse
-		HighDuration = get_timer1();	//gets duration of the HIGH part
+	//flanco descendente -> termino la parte alta del pulso
+	else{
+		HighDuration = get_timer1();	//obtenemos la parte alta del pulso
 	}
-
-	INTEDG = !INTEDG;					//invert edge
 #endif
-//--------------------------------------------------------------------------------------
+	
+	INTEDG = !INTEDG;					//invertimos el flanco de interrupcion
 }
-// ---------------
+
 #ifdef RF_RX_TIMER0
 #INT_TIMER0
 void Timer0_isr(void){
@@ -107,7 +53,6 @@ void Timer0_isr(void){
  * cada 1uS, asi facilita los calculos de tiempo
  */
 void EncenderRF(void){
-//set the timer that is being used to count 1uS per clock cycle
 #ifdef RF_RX_TIMER0
 	//timer0 config
 	#if getenv("CLOCK") == 4000000
@@ -119,7 +64,7 @@ void EncenderRF(void){
 	#elif getenv("CLOCK") == 32000000
 		setup_timer_0(T0_INTERNAL|T0_DIV_8);
 	#else
-		#ERROR La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz
+		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
 	#endif
 
 		enable_interrupts(INT_TIMER0);	//enable interrupt
@@ -134,13 +79,13 @@ void EncenderRF(void){
 	#elif getenv("CLOCK") == 32000000
 		setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);
 	#else
-		#ERROR La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz
+		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
 	#endif
 #endif
 
-	ext_int_edge(L_TO_H);			//set int edge
-	enable_interrupts(INT_EXT);		//enable interrupt (receiver)
-	enable_interrupts(GLOBAL);		//enable global interrupt
+	ext_int_edge(L_TO_H);			//configuramos flanco de interrupcion
+	enable_interrupts(INT_EXT);		//habilitamos interrupcion por flanco
+	enable_interrupts(GLOBAL);		//habilitamos interrupciones globales
 }
 
 /*
@@ -209,54 +154,59 @@ short DataFrameComplete(void){			//check received pulse, return TRUE if data fra
 
 /* ORIGINAL */
 /*
- * Incluye los bits recibitos en la trama y comprueba si se
- * han recibido todos los bits incluido el sync del final
+ * Va incluyendo cada bit que se va recibiento en rfBuffer y comprueba si se han
+ * recibido todos los bits incluido el sync del final. Cuando se recibieron
+ * todos los bits esperados y el sync, la funcion devuelve TRUE
  */
-short DataFrameComplete(void){			//check received pulse, return TRUE if data frame is complete
-	if(TotalDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
+short DataFrameComplete(void){
+	//comprobamos si el pulso es suficientemente largo y asi evitar analizar "ruido"
+	if(TotalDuration > MIN_PULSE){
 		Duty = ((int32)HighDuration * 100) / TotalDuration;
 #ifdef RF_RX_COUNT_TIME
 		TotalTime = TotalTime + TotalDuration;
 #endif
-		
-		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){	//sync pulse
-			if(CountedBits == BUFFER_SIZE){		//data frame complete?
-				CountedBits = 0;		//restart counted bits
-				return(TRUE);			//data frame complete, returns TRUE
+		/* PULSO SYNC */
+		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){
+			if(CountedBits == BUFFER_SIZE){		//la trama esta completa?
+				CountedBits = 0;				//reinicio variable
+				return(TRUE);					//trama completa, devuelvo TRUE
 			}
 
-			CountedBits = 0;		//restart counted bits
+			CountedBits = 0;					//reinicio variable
 #ifdef RF_RX_COUNT_TIME
 			TotalTime = 0;
 #endif
 		}
-		else if((MIN_ZERO <= Duty) && (Duty <= MAX_ZERO)){	//zero pulse
-			shift_right(&rfBuffer,3,0);	//shift in received bit
+		/* PULSO CERO */
+		else if((MIN_ZERO <= Duty) && (Duty <= MAX_ZERO)){
+			shift_right(&rfBuffer,3,0);			//"empujo" el bit recibido por la derecha
 			
-			if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
-				++CountedBits;			//adds one
+			if(CountedBits < BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
+				++CountedBits;					//suma uno
 		}
-		else if((MIN_ONE <= Duty) && (Duty <= MAX_ONE)){	//one pulse
-			shift_right(&rfBuffer,3,1);	//shift in received bit
+		/* PULSO UNO */
+		else if((MIN_ONE <= Duty) && (Duty <= MAX_ONE)){
+			shift_right(&rfBuffer,3,1);			//"empujo" el bit recibido por la derecha
 			
-			if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
-				++CountedBits;			//adds one
+			if(CountedBits < BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
+				++CountedBits;					//suma uno
 		}
-		else{							//received pulse is noise
-			CountedBits = 0;			//restart counted bits
+		/* RUIDO */
+		else{
+			CountedBits = 0;	//reinicio variable
 #ifdef RF_RX_COUNT_TIME
 			TotalTime = 0;
 #endif
 		}
 	}
 	else{
-		CountedBits = 0;	//noise
+		CountedBits = 0;		//reinicio variable
 #ifdef RF_RX_COUNT_TIME
 		TotalTime = 0;
 #endif
 	}
 	
-	return(FALSE);			//incomplete data frame, returns FALSE
+	return(FALSE);				//trama incompleta, devuelvo FALSE
 }
 
 /*
@@ -266,11 +216,21 @@ short DataFrameComplete(void){			//check received pulse, return TRUE if data fra
 short DataReady(void){
 short Ready;
 
-	if(flagPulse == TRUE){				//check if pulse received
-		flagPulse = FALSE;				//clear flag
+	if(flagPulse == TRUE){				//comprueba si se recibio pulso
+		flagPulse = FALSE;				//limpia flag
 		Ready = DataFrameComplete();
 		rfBuffer.Bytes.Nul = 0;
 		
 		return(Ready);
 	}
 }
+
+#ifdef RF_RX_COUNT_TIME
+/*
+ * Devuelve el tiempo que ha durado la ultima trama RF
+ * Utilizar solo despues de que DataReady == TRUE
+ */
+int32 GetRFTime(void){
+	return(TotalTime);
+}
+#endif

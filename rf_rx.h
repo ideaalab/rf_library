@@ -1,18 +1,68 @@
-/* 
- * File:   rf_rx.h
- * Author: Martin
- *
- * Created on 03 de mayo de 2016, 19:50
+/* =============================================================================
+ *                         LIBERIA DE RECECPCION RF
  * 
- * Modificaciones:
- * 01/12/2016:
- * -Se cambia constante RF_TIMER0 por RF_RX_TIMER0
- * -Se cambia constante RF_COUNT_TIMER por RF_RX_COUNT_TIME
- * -Se cambian formato de text (mayusculas/minusculas) para hacerlo estandar
+ * Autor: Martin Andersen
+ * Compania: IDEAA Lab ( http://www.ideaalab.com )
  * 
- * 30/11/2016:
- * -Se elimina funcion rf_in_init() y se sustituye por EncenderRF()
- */
+ * =============================================================================
+ * QUE HACE ESTA LIBRERIA?
+ * 
+ * >Permite decodificar señales RF codificadas con encoders como PT2240B, PT2260,
+ * PT2262, PT2264, etc.
+ * =============================================================================
+ * INTRODUCCION
+ * 
+ * Esta libreria utiliza un timer interno para contar pulsos recibidos. Estos
+ * pulsos se reciben por el pin de interrupcion externa.
+ * La trama de datos consiste en 24 bits + 1 sync. Cada bit es un pulso.
+ * La suma de 24 bits + 1 sync componen una trama completa.
+ * CERO: 25% duty del pulso
+ * UNO: 75% duty del pulso
+ * SYNC: 3.125% duty del pulso
+ * =============================================================================
+ * COMO CONFIGURAR LA LIBRERIA
+ * 
+ * >Por defecto la libreria funciona con el Timer 1. Si queremos usar el Timer 0
+ * hay que declarar un define RF_RX_TIMER0 antes de llamar a la libreria.
+ * #define RF_RX_TIMER0
+ * 
+ * >Si queremos que se cuente el tiempo total de la trama de datos recibida
+ * tenemos que declarar RF_COUNT_TIME.
+ * #define RF_COUNT_TIME
+ * =============================================================================
+ * VARIABLES
+ * 
+ * >rfBuffer: es el buffer de recepcion. Contiene los valores que se van
+ * recibiendo. Comprobarlo cuando DataReady == TRUE.
+ * =============================================================================
+ * FUNCIONES
+ * 
+ * > EncenderRF(): enciende la recepcion de RF (activa las interrupciones).
+ * 
+ * > ApagarRF(): apaga la recepcion de RF (desactiva las interrupciones).
+ * 
+ * > DataReady(): devuelve TRUE cuando hemos recibido una trama completa.
+ * 
+ * > GetRFTime(): devuelve (int32) el tiempo en mS de la ultima trama completa.
+ * Comprobar este valor cuando DataReady == TRUE.
+ * =============================================================================
+ * COMO USAR LA LIBRERIA
+ * 
+ * >Primero hay que inicializar la libreria llamando a EncenderRF().
+ * >Luego hay que comprobar DataReady constantemente en el main. Cuando devuelva
+ * TRUE quiere decir que tenemos la trama lista en rfBuffer.
+ * 
+ *		if(DataReady() == TRUE){			//check if there is new data
+ *			//data received is on rfBuffer
+ *			... execute instructions
+ *		}
+ * =============================================================================
+ * RECURSOS USADOS
+ * 
+ * >Utiliza el Timer1 por defecto, o el Timer0 si se declara RF_RX_TIMER0
+ * 
+ * >Utiliza la interrupcion externa
+ * ========================================================================== */
 
 #ifndef RF_RX_H
 #define	RF_RX_H
@@ -25,18 +75,18 @@
 #endif
 
 #ifdef RF_TIMER0
-	#error Cambiar RF_TIMER0 por RF_RX_TIMER0
+	#error "Cambiar RF_TIMER0 por RF_RX_TIMER0"
 #endif
 #ifdef RX_TIMER0
-	#error Cambiar RX_TIMER0 por RF_RX_TIMER0
+	#error "Cambiar RX_TIMER0 por RF_RX_TIMER0"
 #endif
 #ifdef RF_COUNT_TIME
-	#error Cambiar RF_COUNT_TIME por RF_RX_COUNT_TIME
+	#error "Cambiar RF_COUNT_TIME por RF_RX_COUNT_TIME"
 #endif
 
 #bit INTEDG = getenv("bit:INTEDG")
 
-//define interrupt priority
+//definir prioridad de interrupciones
 #ifdef RF_RX_TIMER0
 	#priority ext,timer0
 #else
@@ -64,18 +114,18 @@
 #define MAX_SYNC	5
 
 /* VARIABLES GLOBALES */
-short flagPulse = FALSE;	//indicates a pulse edge
-rfRemote rfBuffer;			//reception buffer
-int CountedBits = 0;		//number of counted bits
-int Duty = 0;				//pulse duty cycle
-long HighDuration = 0;		//duration of the high part of the pulse
-long TotalDuration = 0;		//duration of the pulse (high & low)
+short flagPulse = FALSE;	//indica si hubo un flanco
+rfRemote rfBuffer;			//buffer de recepcion
+int CountedBits = 0;		//numero de bits contados
+int Duty = 0;				//duty cycle del pulso
+long HighDuration = 0;		//duracion de la parte alta del pulso
+long TotalDuration = 0;		//duracion del pulso completo (alta + baja))
 #ifdef RF_RX_COUNT_TIME
-	int32 TotalTime = 0;	//duration of all received pulses, from first to last
+int32 TotalTime = 0;	//duracion de todos los pulsos recibidos
 #endif
 
 #ifdef RF_RX_TIMER0
-	int Cycles = 0;			//cicles through timer0
+	int Cycles = 0;			//ciclos del timer0
 #endif
 	
 /* PROTOTIPOS */
@@ -83,5 +133,8 @@ void EncenderRF(void);
 void ApagarRF(void);
 short DataFrameComplete(void);
 short DataReady(void);
+#ifdef RF_RX_COUNT_TIME
+int32 GetRFTime(void);
+#endif
 
 #endif	/* RF_RX_H */
