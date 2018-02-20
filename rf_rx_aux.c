@@ -255,6 +255,7 @@ void GrabarMando(rfRemote* DatosRF){
  * Los valores almacenados son los que hay en MandoVirtual[]
  * Ocupa: 215 ROM
  */
+#ifdef NUM_CANALES_RF
 #if NUM_CANALES_RF > 1
 void GrabarBloqueMandos(void){
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
@@ -298,6 +299,7 @@ void GrabarBloqueMandos(rfRemote* DatosRF){
 	
 	enable_interrupts(GLOBAL);
 }
+#endif
 #endif
 
 /*

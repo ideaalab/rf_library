@@ -57,10 +57,10 @@
  * Ej: MemRF[5][1] (5 mandos de 1ch cada uno)
  * MemRF	[x][0]
  * [0][0]: [M1/Ch1]
- * [1][0]: [M1/Ch2]
- * [2][0]: [M1/Ch3]
- * [3][0]: [M1/Ch4]
- * [4][0]: [M1/Ch5]
+ * [1][0]: [M2/Ch1]
+ * [2][0]: [M3/Ch1]
+ * [3][0]: [M4/Ch1]
+ * [4][0]: [M5/Ch1]
  * =============================================================================
  * COMO CONFIGURAR LA LIBRERIA?
  * 
@@ -160,7 +160,7 @@
 #warning "Los canales de los mandos se graban de manera independiente (3 bytes cada uno)"
 #else
 #define GRABAR_DIRECCIONES
-#warning "Los canales de los mandos no se graban, solo se graba la direccion del mando"
+#warning "Los canales de los mandos no se graban, solo se graba la direccion del mando (2 bytes)"
 #endif
 
 #ifndef POS_MEM_MANDOS_START_RF
@@ -223,9 +223,11 @@ rfRemote MemRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/boton
 rfRemote RecibAnterior;							//anterior direccion recibida
 rfRemote Recibido;								//ultima direccion recibida
 
+#ifdef NUM_CANALES_RF
 #if NUM_CANALES_RF > 1
 int SyncStep = 0;						//en que paso de sincronizacion estamos
 rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias direcciones RF y poder sincronizar todos los canales al mismo tiempo
+#endif
 #endif
 
 #ifdef RF_MANTENIDO
@@ -239,9 +241,11 @@ short AnalizarRF(void);
 short AnalizarRF(rfRemote* c);
 void GrabarMando(void);
 void GrabarMando(rfRemote* DatosRF);
+#ifdef NUM_CANALES_RF
 #if NUM_CANALES_RF > 1
 void GrabarBloqueMandos(void);
 void GrabarBloqueMandos(rfRemote* DatosRF);
+#endif
 #endif
 short LeerMandos(void);
 void BorrarMandos(void);
