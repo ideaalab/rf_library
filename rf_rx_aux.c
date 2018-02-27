@@ -20,7 +20,7 @@ void Timer2_isr(void){
 	//compruebo si sigue mantenido el boton del mando
 	if(RFmantenido == TRUE){
 		if(ContTimeOutRFmantenido++ >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
-			ContTimeOutRFmantenido = 0;
+			RestartRFmantenido();
 			LED = FALSE;
 			RFmantenido = FALSE;
 		}
@@ -71,12 +71,10 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 #else
 
 	#ifdef RF_MANTENIDO
-	ContTimeOutRFmantenido = 0;
+	RestartRFmantenido();
 	
 	//si se esta manteniendo un canal salgo de aqui
 	if(RFmantenido == TRUE){
-		set_timer2(0);
-		ContTimeOutRFmantenido = 0;
 		EncenderRF();	//vuelvo a enceder RF
 		return(FALSE);
 	}
@@ -106,8 +104,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	
 	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	set_timer2(0);
-	ContTimeOutRFmantenido = 0;
+	RestartRFmantenido();
 	#endif
 
 	EncenderRF();	//vuelvo a enceder RF
@@ -138,12 +135,10 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 #else
 
 	#ifdef RF_MANTENIDO
-	ContTimeOutRFmantenido = 0;
+	RestartRFmantenido();
 	
 	//si se esta manteniendo un canal salgo de aqui
 	if(RFmantenido == TRUE){
-		set_timer2(0);
-		ContTimeOutRFmantenido = 0;
 		EncenderRF();	//vuelvo a enceder RF
 		return(FALSE);
 	}
@@ -173,8 +168,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	
 	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	set_timer2(0);
-	ContTimeOutRFmantenido = 0;
+	RestartRFmantenido();
 	#endif
 
 	EncenderRF();	//vuelvo a enceder RF
@@ -255,6 +249,7 @@ void GrabarMando(rfRemote* DatosRF){
  * Los valores almacenados son los que hay en MandoVirtual[]
  * Ocupa: 215 ROM
  */
+#ifdef GRABAR_CANALES
 #if NUM_CANALES_RF > 1
 void GrabarBloqueMandos(void){
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
@@ -298,6 +293,7 @@ void GrabarBloqueMandos(rfRemote* DatosRF){
 	
 	enable_interrupts(GLOBAL);
 }
+#endif
 #endif
 
 /*
@@ -398,3 +394,10 @@ void MoverBloque(int from, int to, int offset){
 	
 	enable_interrupts(GLOBAL);
 }
+
+#ifdef RF_MANTENIDO
+void RestartRFmantenido(void){
+	set_timer2(0);
+	ContTimeOutRFmantenido = 0;
+}
+#endif

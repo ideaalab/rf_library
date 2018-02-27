@@ -142,6 +142,10 @@
  * MemRF[x] / MemRF[x][y]
  * >BorrarMandos(): borra la EEPROM de todos los mandos que se habian guardado
  * previamente. Tambien limpia la variable MemRF
+ * >RestartRFmantenido(): reinicia contadores de RF mantenido. Si se quiere
+ * simular una pulsacion RF (RF mantenido se encarga de apagar el led de señal),
+ *  antes de llamar a esta funcion, tambien hay que activar su variable
+ * RFmantenido = TRUE;
  * =============================================================================
  * RECURSOS USADOS
  * 
@@ -223,11 +227,12 @@ rfRemote MemRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/boton
 rfRemote RecibAnterior;							//anterior direccion recibida
 rfRemote Recibido;								//ultima direccion recibida
 
+#ifdef GRABAR_CANALES
 #if NUM_CANALES_RF > 1
 int SyncStep = 0;						//en que paso de sincronizacion estamos
 rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias direcciones RF y poder sincronizar todos los canales al mismo tiempo
 #endif
-
+#endif
 #ifdef RF_MANTENIDO
 short RFmantenido = false;
 int ContTimeOutRFmantenido = 0;
@@ -239,12 +244,17 @@ short AnalizarRF(void);
 short AnalizarRF(rfRemote* c);
 void GrabarMando(void);
 void GrabarMando(rfRemote* DatosRF);
+#ifdef GRABAR_CANALES
 #if NUM_CANALES_RF > 1
 void GrabarBloqueMandos(void);
 void GrabarBloqueMandos(rfRemote* DatosRF);
 #endif
+#endif
 short LeerMandos(void);
 void BorrarMandos(void);
+#ifdef RF_MANTENIDO
+void RestartRFmantenido(void);
+#endif
 /* PROTOTIPOS PRIVADOS */
 void Timer2_isr(void);
 void MoverBloque(int from, int to, int offset);
