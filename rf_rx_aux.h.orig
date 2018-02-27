@@ -227,12 +227,20 @@ rfRemote MemRF[NUM_MANDOS_RF][NUM_CANALES_RF];	//direcciones de los mandos/boton
 rfRemote RecibAnterior;							//anterior direccion recibida
 rfRemote Recibido;								//ultima direccion recibida
 
+<<<<<<< HEAD
 #ifdef GRABAR_CANALES
+=======
+#ifdef NUM_CANALES_RF
+>>>>>>> eba8743c241a00a230433b5bb8d2edabf700a30a
 #if NUM_CANALES_RF > 1
 int SyncStep = 0;						//en que paso de sincronizacion estamos
 rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias direcciones RF y poder sincronizar todos los canales al mismo tiempo
 #endif
 #endif
+<<<<<<< HEAD
+=======
+
+>>>>>>> eba8743c241a00a230433b5bb8d2edabf700a30a
 #ifdef RF_MANTENIDO
 short RFmantenido = false;
 int ContTimeOutRFmantenido = 0;
@@ -244,7 +252,11 @@ short AnalizarRF(void);
 short AnalizarRF(rfRemote* c);
 void GrabarMando(void);
 void GrabarMando(rfRemote* DatosRF);
+<<<<<<< HEAD
 #ifdef GRABAR_CANALES
+=======
+#ifdef NUM_CANALES_RF
+>>>>>>> eba8743c241a00a230433b5bb8d2edabf700a30a
 #if NUM_CANALES_RF > 1
 void GrabarBloqueMandos(void);
 void GrabarBloqueMandos(rfRemote* DatosRF);
