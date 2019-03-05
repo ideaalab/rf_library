@@ -83,7 +83,7 @@
  * declarar un define RF_MANTENIDO. RF_MANTENIDO usa el timer2
  * #define RF_MANTENIDO
  * 
- * >Desde que se recibe la señal RF_MANTENIDO espera otra señal como maximo 200mS.
+ * >Desde que se recibe la seï¿½al RF_MANTENIDO espera otra seï¿½al como maximo 200mS.
  * Despues de ese tiempo se considera que el boton del mando se "solto". Si se
  * quiere usar otro tiempo hay que declarar TIME_OUT_RF_MANTENIDO con el valor
  * deseado en mS. Este valor mientras mayor es, mas tolerante se vuelve a cortes
@@ -143,7 +143,7 @@
  * >BorrarMandos(): borra la EEPROM de todos los mandos que se habian guardado
  * previamente. Tambien limpia la variable MemRF
  * >RestartRFmantenido(): reinicia contadores de RF mantenido. Si se quiere
- * simular una pulsacion RF (RF mantenido se encarga de apagar el led de señal),
+ * simular una pulsacion RF (RF mantenido se encarga de apagar el led de seï¿½al),
  *  antes de llamar a esta funcion, tambien hay que activar su variable
  * RFmantenido = TRUE;
  * =============================================================================
@@ -160,11 +160,11 @@
 #endif
 
 #ifdef NUM_CANALES_RF
-#define GRABAR_CANALES
-#warning "Los canales de los mandos se graban de manera independiente (3 bytes cada uno)"
+	#define GRABAR_CANALES
+	#warning "Los canales de los mandos se graban de manera independiente (3 bytes cada uno)"
 #else
-#define GRABAR_DIRECCIONES
-#warning "Los canales de los mandos no se graban, solo se graba la direccion del mando (2 bytes)"
+	#define GRABAR_DIRECCIONES
+	#warning "Los canales de los mandos no se graban, solo se graba la direccion del mando (2 bytes)"
 #endif
 
 #ifndef POS_MEM_MANDOS_START_RF
@@ -239,7 +239,9 @@ int ContTimeOutRFmantenido = 0;
 #endif
 
 /* PROTOTIPOS PUBLICOS */
+#ifdef RF_MANTENIDO
 void RF_mantenido_init(void);
+#endif
 short AnalizarRF(void);
 short AnalizarRF(rfRemote* c);
 void GrabarMando(void);

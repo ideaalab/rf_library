@@ -19,7 +19,9 @@
 void Timer2_isr(void){
 	//compruebo si sigue mantenido el boton del mando
 	if(RFmantenido == TRUE){
-		if(ContTimeOutRFmantenido++ >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
+		ContTimeOutRFmantenido++;	//incrementamos contador
+		
+		if(ContTimeOutRFmantenido >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
 			RestartRFmantenido();
 			LED = FALSE;
 			RFmantenido = FALSE;
@@ -76,7 +78,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//si se esta manteniendo un canal salgo de aqui
 	if(RFmantenido == TRUE){
 		EncenderRF();	//vuelvo a enceder RF
-		return(FALSE);
+		return(TRUE);	//salgo diciendo que hubo coincidencia
 	}
 	#endif
 
@@ -140,7 +142,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//si se esta manteniendo un canal salgo de aqui
 	if(RFmantenido == TRUE){
 		EncenderRF();	//vuelvo a enceder RF
-		return(FALSE);
+		return(TRUE);
 	}
 	#endif
 	
