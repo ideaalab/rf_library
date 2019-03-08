@@ -314,23 +314,23 @@ int x, y;
 /* -------------------------------------------------------------------------- */
 void Zero_16mS(void){	//envia un CERO
 	RF_TX = 1;
-	delay_us(125);
+	delay_us(125-5);
 	RF_TX = 0;
-	delay_us(375-8);
+	delay_us(375-13);
 }
 
 void One_16mS(void){	//Envia un UNO
 	RF_TX = 1;
-	delay_us(375);
+	delay_us(375-11);
 	RF_TX = 0;
-	delay_us(125-6);
+	delay_us(125-7);
 }
 
 void Sync_16mS(void){	//Envia un SYNC
 	RF_TX = 1;
-	delay_us(125);
+	delay_us(125-5);
 	RF_TX = 0;
-	delay_us(3875-7);
+	delay_us(3875-93);
 }
 
 void TX_16mS(rfRemote Data, int num){
@@ -363,9 +363,9 @@ void One_32mS(void){	//Envia un UNO
 
 void Sync_32mS(void){	//Envia un SYNC
 	RF_TX = 1;
-	delay_us(250);
+	delay_us(250-5);
 	RF_TX = 0;
-	delay_us(7750-175);
+	delay_us(7750-183);
 }
 
 void TX_32mS(rfRemote Data, int num){
@@ -398,9 +398,9 @@ void One_48mS(void){	//Envia un UNO
 
 void Sync_48mS(void){	//Envia un SYNC
 	RF_TX = 1;
-	delay_us(375);
+	delay_us(375-5);
 	RF_TX = 0;
-	delay_us(11625-260);
+	delay_us(11625-263);
 }
 
 void TX_48mS(rfRemote Data, int num){
@@ -414,5 +414,40 @@ int x, y;
 				One_48mS();	
 		}
 		Sync_48mS();
+	}
+}
+/* -------------------------------------------------------------------------- */
+void Zero_64mS(void){	//envia un CERO
+	RF_TX = 1;
+	delay_us(500-11);
+	RF_TX = 0;
+	delay_us(1500-42);
+}
+
+void One_64mS(void){	//Envia un UNO
+	RF_TX = 1;
+	delay_us(1500-30);
+	RF_TX = 0;
+	delay_us(500-17);
+}
+
+void Sync_64mS(void){	//Envia un SYNC
+	RF_TX = 1;
+	delay_us(500-11);
+	RF_TX = 0;
+	delay_us(15500-353);
+}
+
+void TX_64mS(rfRemote Data, int num){
+int x, y;
+	
+	for(x=0; x<num;x++){		//repite la emision
+		for(y=0;y<24;y++){
+			if(Data.Bits[y] == 0)
+				Zero_64mS();
+			else
+				One_64mS();	
+		}
+		Sync_64mS();
 	}
 }
