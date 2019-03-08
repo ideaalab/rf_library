@@ -336,7 +336,7 @@ void Sync_16mS(void){	//Envia un SYNC
 void TX_16mS(rfRemote Data, int num){
 int x, y;
 	
-	for(x=0; x<num;x++){		//repite la emision 4 veces
+	for(x=0; x<num;x++){		//repite la emision
 		for(y=0;y<24;y++){
 			if(Data.Bits[y] == 0)
 				Zero_16mS();
@@ -371,7 +371,7 @@ void Sync_32mS(void){	//Envia un SYNC
 void TX_32mS(rfRemote Data, int num){
 int x, y;
 	
-	for(x=0; x<10;x++){		//repite la emision 4 veces
+	for(x=0; x<num;x++){		//repite la emision
 		for(y=0;y<24;y++){
 			if(Data.Bits[y] == 0)
 				Zero_32mS();
@@ -379,5 +379,40 @@ int x, y;
 				One_32mS();	
 		}
 		Sync_32mS();
+	}
+}
+/* -------------------------------------------------------------------------- */
+void Zero_48mS(void){	//envia un CERO
+	RF_TX = 1;
+	delay_us(375-11);
+	RF_TX = 0;
+	delay_us(1125-31);
+}
+
+void One_48mS(void){	//Envia un UNO
+	RF_TX = 1;
+	delay_us(1125-23);
+	RF_TX = 0;
+	delay_us(375-12);
+}
+
+void Sync_48mS(void){	//Envia un SYNC
+	RF_TX = 1;
+	delay_us(375);
+	RF_TX = 0;
+	delay_us(11625-260);
+}
+
+void TX_48mS(rfRemote Data, int num){
+int x, y;
+	
+	for(x=0; x<num;x++){		//repite la emision
+		for(y=0;y<24;y++){
+			if(Data.Bits[y] == 0)
+				Zero_48mS();
+			else
+				One_48mS();	
+		}
+		Sync_48mS();
 	}
 }
