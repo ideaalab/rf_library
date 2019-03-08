@@ -28,6 +28,11 @@ int Tmr0;
 #else
 	//flanco ascendente -> comenzamos a contar
 	if(INTEDG == RISING){
+#ifdef RF_RX_COUNT_TIME
+		if(CountedBits == 0){
+			TotalTime = 0;
+		}
+#endif
 		TotalDuration = get_timer1();	//obtenemos duracion del ultimo pulso
 		set_timer1(0);					//reset timer
 		flagPulse = TRUE;				//indica que hemos recibido un pulso completo
@@ -169,6 +174,7 @@ short DataFrameComplete(void){
 		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){
 			if(CountedBits == BUFFER_SIZE){		//la trama esta completa?
 				CountedBits = 0;				//reinicio variable
+				rfBuffer.Bytes.Nul = 0;
 				return(TRUE);					//trama completa, devuelvo TRUE
 			}
 
@@ -219,7 +225,6 @@ short Ready;
 	if(flagPulse == TRUE){				//comprueba si se recibio pulso
 		flagPulse = FALSE;				//limpia flag
 		Ready = DataFrameComplete();
-		rfBuffer.Bytes.Nul = 0;
 		
 		return(Ready);
 	}
