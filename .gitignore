@@ -1,2 +1,11 @@
 old*/
 nppBackup*/
+
+#ignora archivos no deseados de proyectos MPLABX
+*.ccspjt
+build*/
+debug*/
+**/nbproject/*
+!**/nbproject/configurations.xml
+!**/nbproject/project.properties
+!**/nbproject/project.xml
