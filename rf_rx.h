@@ -88,9 +88,9 @@
 
 //definir prioridad de interrupciones
 #ifdef RF_RX_TIMER0
-	#priority ext,timer0
+	#priority timer0,ext
 #else
-	#priority ext,timer1
+	#priority timer1,ext
 #endif
 
 /* CONSTANTS */
@@ -114,24 +114,32 @@
 #define MAX_SYNC	5
 
 /* VARIABLES GLOBALES */
-short flagPulse = FALSE;	//indica si hubo un flanco
+short flagPulse = FALSE;	//indica si hay un pulso para contabilizar
+short FallingFlag = FALSE;	//indica si hubo un flanco de bajada
+short RisingFlag = FALSE;	//inidca si hubo un flanco de subida
 rfRemote rfBuffer;			//buffer de recepcion
 int CountedBits = 0;		//numero de bits contados
 int Duty = 0;				//duty cycle del pulso
+long Cycles = 0;			//vueltas del timer0/1
+long CountedCycles = 0;		//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
 long HighDuration = 0;		//duracion de la parte alta del pulso
 long TotalDuration = 0;		//duracion del pulso completo (alta + baja))
-#ifdef RF_RX_COUNT_TIME
-int32 TotalTime = 0;	//duracion de todos los pulsos recibidos
-#endif
 
 #ifdef RF_RX_TIMER0
-	int Cycles = 0;			//ciclos del timer0
+int Tmr0 = 0;
+#else
+long Tmr1 = 0;
+#endif
+
+#ifdef RF_RX_COUNT_TIME
+int32 TotalTime = 0;	//duracion de todos los pulsos recibidos
 #endif
 	
 /* PROTOTIPOS */
 void EncenderRF(void);
 void ApagarRF(void);
 short DataFrameComplete(void);
+void CalcTimes(void);
 short DataReady(void);
 #ifdef RF_RX_COUNT_TIME
 int32 GetRFTime(void);

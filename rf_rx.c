@@ -3,52 +3,43 @@
 // --- INT EXT ---
 #INT_EXT
 void EXT_isr(void) {
-/* --- USAMOS TIMER0 PARA CONTAR --- */
 #ifdef RF_RX_TIMER0
-int Tmr0;
-	
-	disable_interrupts(INT_TIMER0);
 	Tmr0 = get_timer0();
-	
-	//flanco ascendente -> comenzamos a contar
-	if(INTEDG == RISING){
-		TotalDuration = (Cycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
-		set_timer0(0);							//reset timer
-		Cycles = 0;								//reset cycles
-		flagPulse = TRUE;						//indica que hemos recibido un pulso completo
-	}
-	//flanco descendente -> termino la parte alta del pulso
-	else{
-		HighDuration = (Cycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
-	}
-	
-	enable_interrupts(INT_TIMER0);
-	
-/* --- USAMOS TIMER1 PARA CONTAR --- */
 #else
-	//flanco ascendente -> comenzamos a contar
-	if(INTEDG == RISING){
-#ifdef RF_RX_COUNT_TIME
-		if(CountedBits == 0){
-			TotalTime = 0;
-		}
+	Tmr1 = get_timer1();
 #endif
-		TotalDuration = get_timer1();	//obtenemos duracion del ultimo pulso
-		set_timer1(0);					//reset timer
-		flagPulse = TRUE;				//indica que hemos recibido un pulso completo
+
+	CountedCycles = Cycles;
+	
+	//flanco ascendente -> comenzamos a contar
+	// __↑̅ ̅ |__
+	if(INTEDG == RISING){
+#ifdef RF_RX_TIMER0
+		set_timer0(0);		//reset timer
+#else
+		set_timer1(0);		//reset timer
+#endif
+		Cycles = 0;			//reset cycles
+		RisingFlag = TRUE;	//indicamos que hubo un flanco de subida
 	}
 	//flanco descendente -> termino la parte alta del pulso
+	// __|̅ ̅ ↓__
 	else{
-		HighDuration = get_timer1();	//obtenemos la parte alta del pulso
+		FallingFlag = TRUE;
 	}
-#endif
 	
 	INTEDG = !INTEDG;					//invertimos el flanco de interrupcion
 }
 
+
 #ifdef RF_RX_TIMER0
 #INT_TIMER0
 void Timer0_isr(void){
+	Cycles++;
+}
+#else
+#INT_TIMER1
+void Timer1_isr(void){
 	Cycles++;
 }
 #endif
@@ -72,7 +63,7 @@ void EncenderRF(void){
 		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
 	#endif
 
-		enable_interrupts(INT_TIMER0);	//enable interrupt
+	enable_interrupts(INT_TIMER0);	//enable interrupt
 #else
 	//timer1 config
 	#if getenv("CLOCK") == 4000000
@@ -86,6 +77,8 @@ void EncenderRF(void){
 	#else
 		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
 	#endif
+
+	enable_interrupts(INT_TIMER1);	//enable interrupt
 #endif
 
 	ext_int_edge(L_TO_H);			//configuramos flanco de interrupcion
@@ -99,7 +92,10 @@ void EncenderRF(void){
 void ApagarRF(void){
 #ifdef RF_RX_TIMER0
 	disable_interrupts(INT_TIMER0);
+#else
+	disable_interrupts(INT_TIMER1);
 #endif
+	
 	disable_interrupts(INT_EXT);
 }
 
@@ -167,9 +163,7 @@ short DataFrameComplete(void){
 	//comprobamos si el pulso es suficientemente largo y asi evitar analizar "ruido"
 	if(TotalDuration > MIN_PULSE){
 		Duty = ((int32)HighDuration * 100) / TotalDuration;
-#ifdef RF_RX_COUNT_TIME
-		TotalTime = TotalTime + TotalDuration;
-#endif
+		
 		/* PULSO SYNC */
 		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){
 			if(CountedBits == BUFFER_SIZE){		//la trama esta completa?
@@ -179,9 +173,6 @@ short DataFrameComplete(void){
 			}
 
 			CountedBits = 0;					//reinicio variable
-#ifdef RF_RX_COUNT_TIME
-			TotalTime = 0;
-#endif
 		}
 		/* PULSO CERO */
 		else if((MIN_ZERO <= Duty) && (Duty <= MAX_ZERO)){
@@ -200,19 +191,52 @@ short DataFrameComplete(void){
 		/* RUIDO */
 		else{
 			CountedBits = 0;	//reinicio variable
-#ifdef RF_RX_COUNT_TIME
-			TotalTime = 0;
-#endif
 		}
 	}
+	//esto es ruido, el pulso es menor a lo que podemos esperar
 	else{
 		CountedBits = 0;		//reinicio variable
-#ifdef RF_RX_COUNT_TIME
-		TotalTime = 0;
-#endif
 	}
 	
 	return(FALSE);				//trama incompleta, devuelvo FALSE
+}
+
+/*
+ * Calcula el tiempo transcurrido entre un flanco y el siguiente
+ */
+void CalcTimes(void){
+	//flanco ascendente __↑̅̅|__
+	if(RisingFlag == TRUE){
+		RisingFlag = FALSE;
+		
+#ifdef RF_RX_COUNT_TIME
+		if(CountedBits == 0){
+			TotalTime = 0;
+		}
+#endif
+
+#ifdef RF_RX_TIMER0
+		TotalDuration = (CountedCycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
+#else
+		TotalDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos duracion del ultimo pulso
+#endif
+		
+#ifdef RF_RX_COUNT_TIME
+		TotalTime = TotalTime + TotalDuration;
+#endif
+		
+		flagPulse = TRUE;						//indica que hemos recibido un pulso completo
+	}
+	//flanco descendente __|̅̅↓__
+	else if(FallingFlag == TRUE){
+		FallingFlag = FALSE;
+		
+#ifdef RF_RX_TIMER0
+		HighDuration = (CountedCycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
+#else
+		HighDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos la parte alta del pulso
+#endif
+	}
 }
 
 /*
@@ -222,6 +246,8 @@ short DataFrameComplete(void){
 short DataReady(void){
 short Ready;
 
+	CalcTimes();
+	
 	if(flagPulse == TRUE){				//comprueba si se recibio pulso
 		flagPulse = FALSE;				//limpia flag
 		Ready = DataFrameComplete();
