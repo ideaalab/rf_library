@@ -72,16 +72,6 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#warning "Sin implementar"
 #else
 
-	#ifdef RF_MANTENIDO
-	RestartRFmantenido();
-	
-	//si se esta manteniendo un canal salgo de aqui
-	if(RFmantenido == TRUE){
-		EncenderRF();	//vuelvo a enceder RF
-		return(TRUE);	//salgo diciendo que hubo coincidencia
-	}
-	#endif
-
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){
@@ -106,7 +96,10 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	
 	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	RestartRFmantenido();
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
 	#endif
 
 	EncenderRF();	//vuelvo a enceder RF
