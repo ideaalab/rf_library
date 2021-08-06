@@ -23,7 +23,6 @@ void Timer2_isr(void){
 		
 		if(ContTimeOutRFmantenido >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
 			RestartRFmantenido();
-			LED = FALSE;
 			RFmantenido = FALSE;
 		}
 	}
@@ -66,7 +65,7 @@ void RF_mantenido_init(void){
 short AnalizarRF(void){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
-	ApagarRF();			//apago RF para que no interfieran las interrupciones
+	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
@@ -79,9 +78,15 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 		
 	//cuando solo hay un canal podemos optimizar el codigo
 	#if NUM_CANALES_RF == 1
+		//printf("M%u: ", m);
+		
 		if(Recibido.Completo == MemRF[m][0].Completo){
 			bit_set(ButtonMatch[m], 0);	//marco el canal 1 de cada mando que se haya presionado
 			Match = TRUE;
+			/*printf("Y\r\n");
+		}
+		else{
+			printf("N\r\n");*/
 		}
 	#else
 		//recorre los canales
@@ -101,8 +106,8 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 		RestartRFmantenido();
 	}
 	#endif
-
-	EncenderRF();	//vuelvo a enceder RF
+	
+	//EncenderRF();	//vuelvo a enceder RF
 	return(Match);
 #endif
 }

@@ -99,58 +99,18 @@ void ApagarRF(void){
 	disable_interrupts(INT_EXT);
 }
 
-// MODIFICADA 
-short DataFrameComplete(void){			//check received pulse, return TRUE if data frame is complete
-int32 syncMax = TotalDuration >> 4;		//duty tiene que ser menor que el tiempo total / 16
-int32 dutyLowMax = TotalDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
-		
-	if(TotalDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
-		
-		/* PULSO SYNC */
-		if(HighDuration < syncMax){
-			if(CountedBits == BUFFER_SIZE){		//data frame complete?
-				CountedBits = 0;		//restart counted bits
-				rfBuffer.Bytes.Nul = 0;
-				return(TRUE);			//data frame complete, returns TRUE
-			}
-
-			CountedBits = 0;		//restart counted bits
-		}
-		else{
-		/* PULSO CERO */
-			if(HighDuration < dutyLowMax){
-				shift_right(&rfBuffer,3,0);	//shift in received bit
-				
-				if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
-					++CountedBits;			//adds one
-			}
-		/* PULSO UNO */
-			else{
-				shift_right(&rfBuffer,3,1);	//shift in received bit
-
-				if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
-					++CountedBits;			//adds one
-			}
-		}
-	}
-	else{
-		CountedBits = 0;	//noise
-	}
-	
-	return(FALSE);			//incomplete data frame, returns FALSE
-}
-
-
 /* ORIGINAL */
 /*
  * Va incluyendo cada bit que se va recibiento en rfBuffer y comprueba si se han
  * recibido todos los bits incluido el sync del final. Cuando se recibieron
  * todos los bits esperados y el sync, la funcion devuelve TRUE
+ * 
+ * Ocupa unos 230 de ROM
  */
 //short DataFrameComplete(void){
 //	//comprobamos si el pulso es suficientemente largo y asi evitar analizar "ruido"
-//	if(TotalDuration > MIN_PULSE){
-//		Duty = ((int32)HighDuration * 100) / TotalDuration;
+//	if(TotalPulseDuration > MIN_PULSE){
+//		Duty = ((int32)HighPulseDuration * 100) / TotalPulseDuration;
 //		
 //		/* PULSO SYNC */
 //		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){
@@ -189,6 +149,58 @@ int32 dutyLowMax = TotalDuration >> 1;	//duty tiene que ser menor que el tiempo 
 //	return(FALSE);				//trama incompleta, devuelvo FALSE
 //}
 
+/* OPTIMIZADA */
+/*
+ * Igual que original en funcionamiento, pero es mas rapida y menos restrictiva
+ * a la hora de diferenciar los bits. Basicamente por encima del 50% del duty
+ * es un 1, y por debajo es un 0.
+ * Al ser menos restrictiva en teoria es mas facil que un ruido al azar pueda
+ * activarla. Pero en la practica, necesita completar 24 bits y un sync todos
+ * con una duracion minima que si fuese ruido seria dificil de saltarse. Ademas
+ * si fuese el caso, luego se tiene que comparar con una direccion previamente
+ * guardada, lo que hace practicamente imposible que un ruido al azar pueda 
+ * activar nuestro dispositivo.
+ * 
+ * Ocupa unos 96 de ROM
+ */
+short DataFrameComplete(void){
+int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+		
+	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
+		
+		/* PULSO SYNC */
+		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
+			if(CountedBits == BUFFER_SIZE){		//data frame complete?
+				CountedBits = 0;		//restart counted bits
+				rfBuffer.Bytes.Nul = 0;
+				return(TRUE);			//data frame complete, returns TRUE
+			}
+
+			CountedBits = 0;		//restart counted bits
+		}
+		else{
+			/* PULSO CERO */
+			if(HighPulseDuration < dutyLowMax){
+				shift_right(&rfBuffer,3,0);	//shift in received bit
+			}
+			/* PULSO UNO */
+			else{
+				shift_right(&rfBuffer,3,1);	//shift in received bit
+			}
+			
+			if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
+				++CountedBits;			//adds one
+		}
+	}
+	else{
+		CountedBits = 0;	//noise
+	}
+	
+	return(FALSE);			//incomplete data frame, returns FALSE
+}
+
 /*
  * Calcula el tiempo transcurrido entre un flanco y el siguiente
  */
@@ -199,18 +211,18 @@ void CalcTimes(void){
 		
 #ifdef RF_RX_COUNT_TIME
 		if(CountedBits == 0){
-			TotalTime = 0;
+			TotalFrameDuration = 0;
 		}
 #endif
 
 #ifdef RF_RX_TIMER0
-		TotalDuration = (CountedCycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
+		TotalPulseDuration = (CountedCycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
 #else
-		TotalDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos duracion del ultimo pulso
+		TotalPulseDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos duracion del ultimo pulso
 #endif
 		
 #ifdef RF_RX_COUNT_TIME
-		TotalTime = TotalTime + TotalDuration;
+		TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
 #endif
 		
 		flagPulse = TRUE;						//indica que hemos recibido un pulso completo
@@ -220,9 +232,9 @@ void CalcTimes(void){
 		FallingFlag = FALSE;
 		
 #ifdef RF_RX_TIMER0
-		HighDuration = (CountedCycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
+		HighPulseDuration = (CountedCycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
 #else
-		HighDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos la parte alta del pulso
+		HighPulseDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos la parte alta del pulso
 #endif
 	}
 }
@@ -239,7 +251,6 @@ short Ready = FALSE;
 	if(flagPulse == TRUE){				//comprueba si se recibio pulso
 		flagPulse = FALSE;				//limpia flag
 		Ready = DataFrameComplete();
-		//return(Ready);
 	}
 	
 	return(Ready);
@@ -251,6 +262,6 @@ short Ready = FALSE;
  * Utilizar solo despues de que DataReady == TRUE
  */
 int32 GetRFTime(void){
-	return(TotalTime);
+	return(TotalFrameDuration);
 }
 #endif

@@ -7,7 +7,7 @@
  * =============================================================================
  * QUE HACE ESTA LIBRERIA?
  * 
- * >Permite decodificar señales RF codificadas con encoders como PT2240B, PT2260,
+ * >Permite decodificar seï¿½ales RF codificadas con encoders como PT2240B, PT2260,
  * PT2262, PT2264, etc.
  * =============================================================================
  * INTRODUCCION
@@ -101,7 +101,7 @@
 #define BUFFER_SIZE	24	//length of the data stream received
 
 //--- Duty cicle
-#define	MIN_ZERO	15		
+/*#define	MIN_ZERO	15		
 #define ZERO		25		//theoretical
 #define MAX_ZERO	35
 
@@ -111,7 +111,7 @@
 
 #define MIN_SYNC	1
 #define SYNC		3.125	//theoretical
-#define MAX_SYNC	5
+#define MAX_SYNC	5*/
 
 /* VARIABLES GLOBALES */
 short flagPulse = FALSE;	//indica si hay un pulso para contabilizar
@@ -119,11 +119,11 @@ short FallingFlag = FALSE;	//indica si hubo un flanco de bajada
 short RisingFlag = FALSE;	//inidca si hubo un flanco de subida
 rfRemote rfBuffer;			//buffer de recepcion
 int CountedBits = 0;		//numero de bits contados
-int Duty = 0;				//duty cycle del pulso
+//int Duty = 0;				//duty cycle del pulso
 long Cycles = 0;			//vueltas del timer0/1
 long CountedCycles = 0;		//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
-long HighDuration = 0;		//duracion de la parte alta del pulso
-long TotalDuration = 0;		//duracion del pulso completo (alta + baja))
+long HighPulseDuration = 0;		//duracion de la parte alta del pulso
+long TotalPulseDuration = 0;	//duracion del pulso completo (alta + baja))
 
 #ifdef RF_RX_TIMER0
 int Tmr0 = 0;
@@ -132,7 +132,7 @@ long Tmr1 = 0;
 #endif
 
 #ifdef RF_RX_COUNT_TIME
-int32 TotalTime = 0;	//duracion de todos los pulsos recibidos
+int32 TotalFrameDuration = 0;	//duracion de todos los pulsos recibidos
 #endif
 	
 /* PROTOTIPOS */
