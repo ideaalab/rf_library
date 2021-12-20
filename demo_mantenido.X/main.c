@@ -1,8 +1,8 @@
-#include <12F1840.h>
+#include <16F1825.h>
 #device adc=8
 #use delay(clock=32000000)
 
-//#define DEBUG
+#define DEBUG
 
 #FUSES INTRC_IO, NOWDT, PUT, NOMCLR, NOPROTECT, NOCPD, BROWNOUT, NOCLKOUT, NOIESO, NOFCMEN
 #FUSES NOWRT, PLL_SW, NOSTVREN, BORV19, NODEBUG, NOLVP
@@ -13,23 +13,23 @@
 #define		PRESIONADO	0
 
 //pins
-#bit LED	= PORTA.0	//led
-#bit A1		= PORTA.1	//
-#bit RF		= PORTA.2	//RF in
-#bit BTN	= PORTA.3	//btn
-#bit A4		= PORTA.4	//
-#bit OUT	= PORTA.5	//
+#bit SERIAL_TX	= PORTA.0	//serial out
+#bit A1			= PORTA.1	//
+#bit RF			= PORTA.2	//RF in
+#bit BTN		= PORTA.3	//btn
+#bit LED1		= PORTA.4	//led 1
+#bit LED2		= PORTA.5	//led 2
 
 //defines
-#define P_LED		PIN_A0		//O
+#define P_SERIAL_TX	PIN_A0		//O
 #define P_A1		PIN_A1		//I
 #define P_RF		PIN_A2		//I
 #define P_BTN		PIN_A3		//I
-#define P_A4		PIN_A4		//I
-#define P_OUT		PIN_A5		//O
+#define P_LED1		PIN_A4		//O
+#define P_LED2		PIN_A5		//O
 
 //Bits			    543210
-#define TRIS_A	0b00011110	//define cuales son entradas y cuales salidas
+#define TRIS_A	0b00001110	//define cuales son entradas y cuales salidas
 #define WPU_A	0b00001000	//define los weak pull up
 
 /* VARIABLES */
@@ -40,11 +40,11 @@ short HayMandos;			//indica si hay algun mando grabado en memoria
 #define NUM_MANDOS_RF			3		//permite memorizar 3 mandos
 #define NUM_CANALES_RF			1
 #define RF_MANTENIDO					//vamos a usar el btn mantenido por RF de RF_RX_AUX
-#define TIME_OUT_RF_MANTENIDO	150		//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido
+#define TIME_OUT_RF_MANTENIDO	150000	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en uS)
 #define POS_MEM_MANDOS_START_RF	0		//a partir de aqui se graban los mandos
 
 #ifdef DEBUG
-#use rs232(baud=250000, xmit=P_OUT, ERRORS)
+#use rs232(baud=250000, xmit=P_SERIAL_TX, ERRORS)
 #endif
 
 #include "..\rf_rx.c"
@@ -66,24 +66,23 @@ void main(void){
 	setup_spi(SPI_DISABLED);				//configura SPI
 	//setup_uart(FALSE);					//configura UART
 	setup_vref(VREF_OFF);					//no se usa voltaje de referencia
-	setup_comparator(NC_NC);				//comparador apagado
+	setup_comparator(NC_NC_NC_NC);			//comparador apagado
 	
 	//enable_interrupts(GLOBAL);				//lo habilitan otras funciones
 	
 	set_tris_a(TRIS_A);						//configura pines
 	port_a_pullups(WPU_A);					//configura weak pull ups
 	
-	output_low(P_LED);
-	output_low(P_OUT);
+	output_low(P_LED1);
+	output_low(P_LED2);
 	
 	HayMandos = LeerMandos();	//lee los mandos grabados
 	EncenderRF();
-	RF_mantenido_init();
 	
 	do{
 		if(BTN == PRESIONADO){
 			flagSync = TRUE;
-			output_high(P_LED);
+			output_high(P_LED2);
 			
 			while(BTN == PRESIONADO){delay_ms(20);}
 		}
@@ -102,15 +101,11 @@ void ComprobarRF(void){
 		
 #ifdef DEBUG
 		printf("0x %02X %02X %02X\r", Recibido.Bytes.Hi, Recibido.Bytes.Mi, Recibido.Bytes.Lo);
-		/*putc(Recibido.Bytes.Hi);
-		putc(Recibido.Bytes.Mi);
-		putc(Recibido.Bytes.Lo);
-		printf("\r\n");*/
 #endif
 		
 		if(flagSync == TRUE){
 			if(RecibAnterior.Completo == Recibido.Completo){
-				output_low(P_LED);			//apago led
+				output_low(P_LED2);			//apago led
 				flagSync = FALSE;			//apago sync
 				GrabarMando();				//graba el mando recibido
 				HayMandos = LeerMandos();	//vuelve a leer los mandos almacenados
@@ -119,19 +114,17 @@ void ComprobarRF(void){
 		}
 		else{
 			if(AnalizarRF() == TRUE){
-				output_high(P_LED);
-#ifndef DEBUG
-				output_high(P_OUT);
+				output_high(P_LED1);
+				
+				output_high(P_LED2);
 				delay_us(10);
-				output_low(P_OUT);
-#endif
+				output_low(P_LED2);
 			}
-			//rfBuffer.Completo = 0;
 		}
 	}
 	
 	#warning "que pasa si esta mantenido y se presiona el boton de sync?"
 	if((RFMantenido == FALSE) && (flagSync == FALSE)){
-		output_low(P_LED);
+		output_low(P_LED1);
 	}
 }
