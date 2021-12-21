@@ -174,7 +174,7 @@
 #ifdef RF_MANTENIDO
 #warning "Se detecta cuando se mantiene presionado un boton del mando"
 
-#define T_T2							10	//interrupcion timer 2 en mS
+/*#define T_T2							10	//interrupcion timer 2 en mS
 #ifndef TIME_OUT_RF_MANTENIDO
 #define TIME_OUT_RF_MANTENIDO			200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido
 #endif
@@ -182,7 +182,7 @@
 
 #else
 #warning "No se detecta cuando se mantiene presionado un boton del mando"
-#endif
+#endif*/
 
 /* DEFINES */
 #define RF_ADDR_LO	0
@@ -233,15 +233,8 @@ int SyncStep = 0;						//en que paso de sincronizacion estamos
 rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias direcciones RF y poder sincronizar todos los canales al mismo tiempo
 #endif
 #endif
-#ifdef RF_MANTENIDO
-short RFmantenido = false;
-int ContTimeOutRFmantenido = 0;
-#endif
 
 /* PROTOTIPOS PUBLICOS */
-#ifdef RF_MANTENIDO
-void RF_mantenido_init(void);
-#endif
 short AnalizarRF(void);
 short AnalizarRF(rfRemote* c);
 void GrabarMando(void);
@@ -254,9 +247,7 @@ void GrabarBloqueMandos(rfRemote* DatosRF);
 #endif
 short LeerMandos(void);
 void BorrarMandos(void);
-#ifdef RF_MANTENIDO
-void RestartRFmantenido(void);
-#endif
+
 /* PROTOTIPOS PRIVADOS */
 void Timer2_isr(void);
 void MoverBloque(int from, int to, int offset);

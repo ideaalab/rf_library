@@ -26,9 +26,6 @@
  * hay que declarar un define RF_RX_TIMER0 antes de llamar a la libreria.
  * #define RF_RX_TIMER0
  * 
- * >Si queremos que se cuente el tiempo total de la trama de datos recibida
- * tenemos que declarar RF_COUNT_TIME.
- * #define RF_COUNT_TIME
  * =============================================================================
  * VARIABLES
  * 
@@ -70,10 +67,6 @@
 #include "rf_remotes.h"
 
 /* COMPROBACIONES DE COMPATIBILIDAD */
-#if getenv("CLOCK") == 4000000
-#warning "Las pruebas sugieren que el receptor no funciona a 4Mhz"
-#endif
-
 #ifdef RF_TIMER0
 	#error "Cambiar RF_TIMER0 por RF_RX_TIMER0"
 #endif
@@ -82,6 +75,12 @@
 #endif
 #ifdef RF_COUNT_TIME
 	#error "Cambiar RF_COUNT_TIME por RF_RX_COUNT_TIME"
+#endif
+#ifdef RF_RX_COUNT_TIME
+	#warning "Ya no es necesario declarar esto. El tiempo siempre se cuenta"
+#endif
+#ifdef RF_MANTENIDO
+	#warning "Ya no es necesario declarar esto. Siempre se puede usar esta funcion"
 #endif
 
 #bit INTEDG = getenv("bit:INTEDG")
@@ -100,30 +99,19 @@
 #define MIN_PULSE	300	//minimum duration allowed for received pulse, in uS (theoreticaly is 16*ALFA)
 #define BUFFER_SIZE	24	//length of the data stream received
 
-//--- Duty cicle
-/*#define	MIN_ZERO	15		
-#define ZERO		25		//theoretical
-#define MAX_ZERO	35
-
-#define	MIN_ONE		65
-#define ONE			75		//theoretical
-#define MAX_ONE		85
-
-#define MIN_SYNC	1
-#define SYNC		3.125	//theoretical
-#define MAX_SYNC	5*/
-
 /* VARIABLES GLOBALES */
-short flagPulse = FALSE;	//indica si hay un pulso para contabilizar
-short FallingFlag = FALSE;	//indica si hubo un flanco de bajada
-short RisingFlag = FALSE;	//inidca si hubo un flanco de subida
-rfRemote rfBuffer;			//buffer de recepcion
-int CountedBits = 0;		//numero de bits contados
-//int Duty = 0;				//duty cycle del pulso
-long Cycles = 0;			//vueltas del timer0/1
-long CountedCycles = 0;		//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
-long HighPulseDuration = 0;		//duracion de la parte alta del pulso
-long TotalPulseDuration = 0;	//duracion del pulso completo (alta + baja))
+short flagPulse = FALSE;			//indica si hay un pulso para contabilizar
+short FallingFlag = FALSE;			//indica si hubo un flanco de bajada
+short RisingFlag = FALSE;			//inidca si hubo un flanco de subida
+short RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un mando a distancia
+rfRemote rfBuffer;					//buffer de recepcion
+int CountedBits = 0;				//numero de bits contados
+//int Duty = 0;						//duty cycle del pulso
+long Cycles = 0;					//vueltas del timer0/1
+long CyclesSinceLastValidFrame = 0;	//vueltas del timer0/1 desde el ultimo dato valido
+long CountedCycles = 0;				//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
+long HighPulseDuration = 0;			//duracion de la parte alta del pulso
+long TotalPulseDuration = 0;		//duracion del pulso completo (alta + baja))
 
 #ifdef RF_RX_TIMER0
 int Tmr0 = 0;
@@ -131,9 +119,9 @@ int Tmr0 = 0;
 long Tmr1 = 0;
 #endif
 
-#ifdef RF_RX_COUNT_TIME
-int32 TotalFrameDuration = 0;	//duracion de todos los pulsos recibidos
-#endif
+int32 LastFrameDuration = 0;		//duracion de la ultima trama recibida
+int32 TotalFrameDuration = 0;		//duracion de todos los pulsos recibidos
+int32 TimeSinceLastValidFrame = 0;	//tiempo transcurrido desde el ultimo dato valido
 	
 /* PROTOTIPOS */
 void EncenderRF(void);
@@ -141,8 +129,7 @@ void ApagarRF(void);
 short DataFrameComplete(void);
 void CalcTimes(void);
 short DataReady(void);
-#ifdef RF_RX_COUNT_TIME
 int32 GetRFTime(void);
-#endif
+void RestartRFmantenido(void);
 
 #endif	/* RF_RX_H */

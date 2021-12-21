@@ -36,11 +36,13 @@ void EXT_isr(void) {
 #INT_TIMER0
 void Timer0_isr(void){
 	Cycles++;
+	CyclesSinceLastValidFrame++;
 }
 #else
 #INT_TIMER1
 void Timer1_isr(void){
 	Cycles++;
+	CyclesSinceLastValidFrame++;
 }
 #endif
 
@@ -161,7 +163,7 @@ void ApagarRF(void){
  * guardada, lo que hace practicamente imposible que un ruido al azar pueda 
  * activar nuestro dispositivo.
  * 
- * Ocupa unos 96 de ROM
+ * Ocupa unos 126 de ROM
  */
 short DataFrameComplete(void){
 int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
@@ -174,7 +176,8 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
 			if(CountedBits == BUFFER_SIZE){		//data frame complete?
 				CountedBits = 0;		//restart counted bits
-				rfBuffer.Bytes.Nul = 0;
+				//rfBuffer.Bytes.Nul = 0;
+				RestartRFmantenido();
 				return(TRUE);			//data frame complete, returns TRUE
 			}
 
@@ -205,26 +208,24 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Calcula el tiempo transcurrido entre un flanco y el siguiente
  */
 void CalcTimes(void){
+
 	//flanco ascendente __↑̅̅|__
 	if(RisingFlag == TRUE){
 		RisingFlag = FALSE;
 		
-#ifdef RF_RX_COUNT_TIME
+		//guardo tiempo total del frame
 		if(CountedBits == 0){
+			LastFrameDuration = TotalFrameDuration;
 			TotalFrameDuration = 0;
 		}
-#endif
 
 #ifdef RF_RX_TIMER0
-		TotalPulseDuration = (CountedCycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
+		TotalPulseDuration = ((int32)CountedCycles * 256) + Tmr0;	//obtenemos duracion del ultimo pulso
 #else
-		TotalPulseDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos duracion del ultimo pulso
+		TotalPulseDuration = ((int32)CountedCycles * 65536) + Tmr1;	//obtenemos duracion del ultimo pulso
 #endif
 		
-#ifdef RF_RX_COUNT_TIME
 		TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
-#endif
-		
 		flagPulse = TRUE;						//indica que hemos recibido un pulso completo
 	}
 	//flanco descendente __|̅̅↓__
@@ -232,11 +233,23 @@ void CalcTimes(void){
 		FallingFlag = FALSE;
 		
 #ifdef RF_RX_TIMER0
-		HighPulseDuration = (CountedCycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
+		HighPulseDuration = ((int32)CountedCycles * 256) + Tmr0;	//obtenemos la parte alta del pulso
 #else
-		HighPulseDuration = (CountedCycles * 65536) + Tmr1;	//obtenemos la parte alta del pulso
+		HighPulseDuration = ((int32)CountedCycles * 65536) + Tmr1;	//obtenemos la parte alta del pulso
 #endif
 	}
+
+#ifdef RF_RX_TIMER0
+	TimeSinceLastValidFrame = ((int32)CyclesSinceLastValidFrame * 256) + get_timer0();		//obtenemos duracion del ultimo pulso
+#else
+	TimeSinceLastValidFrame = ((int32)CyclesSinceLastValidFrame * 65536) + get_timer1();	//obtenemos duracion del ultimo pulso
+#endif
+	
+	if(TimeSinceLastValidFrame > TIME_OUT_RF_MANTENIDO){
+		RestartRFmantenido();
+		RFmantenido = FALSE;
+	}
+	
 }
 
 /*
@@ -256,12 +269,14 @@ short Ready = FALSE;
 	return(Ready);
 }
 
-#ifdef RF_RX_COUNT_TIME
 /*
  * Devuelve el tiempo que ha durado la ultima trama RF
- * Utilizar solo despues de que DataReady == TRUE
  */
 int32 GetRFTime(void){
-	return(TotalFrameDuration);
+	return(LastFrameDuration);
 }
-#endif
+
+void RestartRFmantenido(void){
+	TimeSinceLastValidFrame = 0;
+	CyclesSinceLastValidFrame = 0;
+}

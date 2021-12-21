@@ -1,6 +1,6 @@
 #include <16F1825.h>
 #device adc=8
-#use delay(clock=32000000)
+#use delay(clock=4000000)
 
 #define DEBUG
 
@@ -54,7 +54,7 @@ void ComprobarRF(void);
 /* -------------------------------- */
 
 void main(void){
-	setup_oscillator(OSC_8MHZ|OSC_PLL_ON);	//configura oscilador interno
+	setup_oscillator(OSC_4MHZ|OSC_PLL_OFF);	//configura oscilador interno
 	setup_wdt(WDT_OFF);						//configuracion wdt
 	//setup_timer_0(T0_INTERNAL|T0_DIV_1);		//lo configura rf_in_init()
 	//setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);	//

@@ -15,7 +15,7 @@
  * Se usa para simular pulsacion mantenida por RF
  * Ocupa 13 de ROM
  */
-#int_TIMER2
+/*#int_TIMER2
 void Timer2_isr(void){
 	//compruebo si sigue mantenido el boton del mando
 	if(RFmantenido == TRUE){
@@ -26,28 +26,7 @@ void Timer2_isr(void){
 			RFmantenido = FALSE;
 		}
 	}
-}
-
-/*
- * Configura el Timer 2 para interrumpir cada 10mS
- * Ocupa 13 de ROM
- */
-void RF_mantenido_init(void){
-#IF getenv("CLOCK") == 4000000
-	setup_timer_2(T2_DIV_BY_4,249,10);
-#ELIF getenv("CLOCK") == 8000000
-	setup_timer_2(T2_DIV_BY_16,249,5);
-#ELIF getenv("CLOCK") == 16000000
-	setup_timer_2(T2_DIV_BY_16,249,10);
-#ELIF getenv("CLOCK") == 32000000
-	setup_timer_2(T2_DIV_BY_64,249,5);
-#ELSE
-	#ERROR La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz
-#ENDIF
-
-	enable_interrupts(INT_TIMER2);
-	enable_interrupts(GLOBAL);		//enable global interrupt
-}
+}*/
 #endif
 
 /*
@@ -99,13 +78,11 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#endif
 	}
 	
-	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
 	
 	if(Match == TRUE){
 		RestartRFmantenido();
 	}
-	#endif
 	
 	//EncenderRF();	//vuelvo a enceder RF
 	return(Match);
@@ -394,10 +371,3 @@ void MoverBloque(int from, int to, int offset){
 	
 	enable_interrupts(GLOBAL);
 }
-
-#ifdef RF_MANTENIDO
-void RestartRFmantenido(void){
-	set_timer2(0);
-	ContTimeOutRFmantenido = 0;
-}
-#endif
