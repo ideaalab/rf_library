@@ -245,7 +245,7 @@ void CalcTimes(void){
 	TimeSinceLastValidFrame = ((int32)CyclesSinceLastValidFrame * 65536) + get_timer1();	//obtenemos duracion del ultimo pulso
 #endif
 	
-	if(TimeSinceLastValidFrame > TIME_OUT_RF_MANTENIDO){
+	if(TimeSinceLastValidFrame > RF_MANTENIDO_TIME_OUT_US){
 		RestartRFmantenido();
 		RFmantenido = FALSE;
 	}

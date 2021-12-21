@@ -26,6 +26,14 @@
  * hay que declarar un define RF_RX_TIMER0 antes de llamar a la libreria.
  * #define RF_RX_TIMER0
  * 
+ * >Desde que se recibe la señal se espera otra señal como maximo 200mS.
+ * Despues de ese tiempo se considera que el boton del mando se "solto". Si se
+ * quiere usar otro tiempo hay que declarar RF_MANTENIDO_TIME_OUT con el valor
+ * deseado en mS. Este valor mientras mayor es, mas tolerante se vuelve a cortes
+ * e interferencias en la recepcion, pero tambien introduce mas retardo en la
+ * recepcion.
+ * #define RF_MANTENIDO_TIME_OUT	500
+ * 
  * =============================================================================
  * VARIABLES
  * 
@@ -80,7 +88,7 @@
 	#warning "Ya no es necesario declarar esto. El tiempo siempre se cuenta"
 #endif
 #ifdef RF_MANTENIDO
-	#warning "Ya no es necesario declarar esto. Siempre se puede usar esta funcion"
+	#warning "Ya no es necesario declarar esto. RFmantenido siempre esta activo"
 #endif
 
 #bit INTEDG = getenv("bit:INTEDG")
@@ -92,12 +100,17 @@
 	#priority timer1,ext
 #endif
 
+#ifndef RF_MANTENIDO_TIME_OUT
+#define RF_MANTENIDO_TIME_OUT	200	//mS
+#endif
+
 /* CONSTANTS */
 #define FALLING		0	//falling edge
 #define RISING		1	//rising edge
 
 #define MIN_PULSE	300	//minimum duration allowed for received pulse, in uS (theoreticaly is 16*ALFA)
 #define BUFFER_SIZE	24	//length of the data stream received
+#define RF_MANTENIDO_TIME_OUT_US	(RF_MANTENIDO_TIME_OUT * 1000)	//tiempo en uS para que se considere que se ha dejado de pulsar el boton
 
 /* VARIABLES GLOBALES */
 short flagPulse = FALSE;			//indica si hay un pulso para contabilizar

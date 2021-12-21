@@ -79,20 +79,6 @@
  * canales de manera independiente.
  * #define NUM_CANALES_RF	4
  * 
- * >Si se quiere usar la funcion de "mantener" el boton del mando, hay que
- * declarar un define RF_MANTENIDO. RF_MANTENIDO usa el timer2
- * #define RF_MANTENIDO
- * 
- * >Desde que se recibe la se�al RF_MANTENIDO espera otra se�al como maximo 200mS.
- * Despues de ese tiempo se considera que el boton del mando se "solto". Si se
- * quiere usar otro tiempo hay que declarar TIME_OUT_RF_MANTENIDO con el valor
- * deseado en mS. Este valor mientras mayor es, mas tolerante se vuelve a cortes
- * e interferencias en la recepcion, pero tambien introduce mas retardo en la
- * recepcion.
- * #define TIME_OUT_RF_MANTENIDO	500
- * 
- * >Llamar a la funcion RF_mantenido_init() al inicio del programa para que se
- * detecte cuando se mantiene un canal.
  * =============================================================================
  * VARIABLES
  * 
@@ -120,9 +106,6 @@
  * canales a sincronizar. Esta variable la usa la funcion GrabarBloqueMandos().
  * =============================================================================
  * FUNCIONES
- * 
- * > RF_mantenido_init(): inicializa los perifericos necesarios para poder
- * detectar cuando un canal RF se esta manteniendo.
  * >AnalizarRF(rfRemote): compara los datos recibidos con el contenido de MemRF.
  * Guarda las coincidencias en ButtonMatch[]. Devuelve TRUE si hubo alguna
  * coincidencia.
@@ -142,14 +125,6 @@
  * MemRF[x] / MemRF[x][y]
  * >BorrarMandos(): borra la EEPROM de todos los mandos que se habian guardado
  * previamente. Tambien limpia la variable MemRF
- * >RestartRFmantenido(): reinicia contadores de RF mantenido. Si se quiere
- * simular una pulsacion RF (RF mantenido se encarga de apagar el led de se�al),
- *  antes de llamar a esta funcion, tambien hay que activar su variable
- * RFmantenido = TRUE;
- * =============================================================================
- * RECURSOS USADOS
- * 
- * >Si se usa RF_MANTENIDO requiere el Timer2 para funcionar
  * ========================================================================== */
 
 #ifndef RF_RX_AUX_H
@@ -170,19 +145,6 @@
 #ifndef POS_MEM_MANDOS_START_RF
 #ERROR "Hay que declarar POS_MEM_MANDOS_START_RF para que la libreria funcione"
 #endif
-
-#ifdef RF_MANTENIDO
-#warning "Se detecta cuando se mantiene presionado un boton del mando"
-
-/*#define T_T2							10	//interrupcion timer 2 en mS
-#ifndef TIME_OUT_RF_MANTENIDO
-#define TIME_OUT_RF_MANTENIDO			200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido
-#endif
-#define VUELTAS_TIME_OUT_RF_MANTENIDO	(TIME_OUT_RF_MANTENIDO / T_T2)
-
-#else
-#warning "No se detecta cuando se mantiene presionado un boton del mando"
-#endif*/
 
 /* DEFINES */
 #define RF_ADDR_LO	0
@@ -215,7 +177,6 @@
 
 /* VARIABLES */
 short flagSync = false;		//indica si estamos grabando un mando
-
 int ButtonMatch[NUM_MANDOS_RF];//indica que botones se presionaron de cada mando (max 8 botones por mando, 1bit cada boton)
 
 #ifdef GRABAR_DIRECCIONES
@@ -249,7 +210,6 @@ short LeerMandos(void);
 void BorrarMandos(void);
 
 /* PROTOTIPOS PRIVADOS */
-void Timer2_isr(void);
 void MoverBloque(int from, int to, int offset);
 
 #endif	/* RF_RX_AUX_H */

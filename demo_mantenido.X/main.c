@@ -10,38 +10,37 @@
 #use fast_io(a)               //se accede al puerto a como memoria
 #byte PORTA	= getenv("SFR:PORTA")
 
-#define		PRESIONADO	0
+#define	PRESIONADO	0
 
 //pins
-#bit SERIAL_TX	= PORTA.0	//serial out
-#bit A1			= PORTA.1	//
-#bit RF			= PORTA.2	//RF in
-#bit BTN		= PORTA.3	//btn
-#bit LED1		= PORTA.4	//led 1
-#bit LED2		= PORTA.5	//led 2
+#bit SERIAL_TX	= PORTA.0			//serial out
+#bit A1			= PORTA.1			//NC
+#bit RF			= PORTA.2			//RF in
+#bit BTN		= PORTA.3			//btn
+#bit LED1		= PORTA.4			//led 1
+#bit LED2		= PORTA.5			//led 2
 
 //defines
-#define P_SERIAL_TX	PIN_A0		//O
-#define P_A1		PIN_A1		//I
-#define P_RF		PIN_A2		//I
-#define P_BTN		PIN_A3		//I
-#define P_LED1		PIN_A4		//O
-#define P_LED2		PIN_A5		//O
+#define P_SERIAL_TX	PIN_A0			//O
+#define P_A1		PIN_A1			//I
+#define P_RF		PIN_A2			//I
+#define P_BTN		PIN_A3			//I
+#define P_LED1		PIN_A4			//O
+#define P_LED2		PIN_A5			//O
 
 //Bits			    543210
-#define TRIS_A	0b00001110	//define cuales son entradas y cuales salidas
-#define WPU_A	0b00001000	//define los weak pull up
+#define TRIS_A	0b00001110			//define cuales son entradas y cuales salidas
+#define WPU_A	0b00001000			//define los weak pull up
 
 /* VARIABLES */
-short HayMandos;			//indica si hay algun mando grabado en memoria
+short HayMandos;					//indica si hay algun mando grabado en memoria
 
 /* CONSTANTES PARA RF */
-#define RF_RX_TIMER0					//usamos el timer0 para RF
-#define NUM_MANDOS_RF			3		//permite memorizar 3 mandos
-#define NUM_CANALES_RF			1
-#define RF_MANTENIDO					//vamos a usar el btn mantenido por RF de RF_RX_AUX
-#define TIME_OUT_RF_MANTENIDO	150000	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en uS)
-#define POS_MEM_MANDOS_START_RF	0		//a partir de aqui se graban los mandos
+#define RF_RX_TIMER0				//usamos el timer0 para RF
+#define NUM_MANDOS_RF			3	//permite memorizar 3 mandos
+#define NUM_CANALES_RF			1	//vamos a usar el btn mantenido por RF de RF_RX_AUX
+#define RF_MANTENIDO_TIME_OUT	150	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
+#define POS_MEM_MANDOS_START_RF	0	//a partir de aqui se graban los mandos
 
 #ifdef DEBUG
 #use rs232(baud=250000, xmit=P_SERIAL_TX, ERRORS)
@@ -58,7 +57,7 @@ void main(void){
 	setup_wdt(WDT_OFF);						//configuracion wdt
 	//setup_timer_0(T0_INTERNAL|T0_DIV_1);		//lo configura rf_in_init()
 	//setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);	//
-	//setup_timer_2(T2_DIV_BY_64,249,5);		//lo configura RFmantenido_init()
+	//setup_timer_2(T2_DIV_BY_64,249,5);		//
 	setup_dac(DAC_OFF);						//configura DAC
 	setup_adc(ADC_CLOCK_INTERNAL);			//configura ADC
 	setup_adc_ports(NO_ANALOGS);			//configura ADC
@@ -78,7 +77,7 @@ void main(void){
 	
 	HayMandos = LeerMandos();	//lee los mandos grabados
 	EncenderRF();
-	
+
 	do{
 		if(BTN == PRESIONADO){
 			flagSync = TRUE;

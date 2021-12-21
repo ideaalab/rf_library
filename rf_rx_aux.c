@@ -1,34 +1,6 @@
 #include "rf_remotes.h"
 #include "rf_rx_aux.h"
 
-/* 
- * Esto permite saber si se mantiene presionado un boton de un mando a distancia
- * Cada vez que se reciba una trama correcta de RF y coincida con un mando hay
- * que poner a 0 la variable ContMantenidoTimeOut
- * El mantenido NO FUNCIONA BIEN CON CIRCUITOS DE SERVOS ya que introducen mucho
- * ruido y el receptor no consigue decodificar bien la señal, provocando "ausencia"
- * de tramas correctas.
- */
-#ifdef RF_MANTENIDO
-/*
- * Interrupcion del timer 2
- * Se usa para simular pulsacion mantenida por RF
- * Ocupa 13 de ROM
- */
-/*#int_TIMER2
-void Timer2_isr(void){
-	//compruebo si sigue mantenido el boton del mando
-	if(RFmantenido == TRUE){
-		ContTimeOutRFmantenido++;	//incrementamos contador
-		
-		if(ContTimeOutRFmantenido >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
-			RestartRFmantenido();
-			RFmantenido = FALSE;
-		}
-	}
-}*/
-#endif
-
 /*
  * Mira si los datos recibidos por RF se corresponden con algun mando almacenado
  * Si hay alguna coincidencia se guarda en la variable ButtonMatch[] y la
@@ -36,10 +8,8 @@ void Timer2_isr(void){
  * Utiliza los valores de la variable "Recibido" para comparar
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: 80 ROM
- * -1 Canal + Mantenido: 93 ROM
- * -4 Canales: 106 ROM
- * -4 Canales + Mantenido: 121 ROM
+ * -1 Canal: 79 ROM
+ * -4 Canales: x ROM
  */
 short AnalizarRF(void){
 short Match = FALSE;	//indica si hubo alguna coincidencia
@@ -97,29 +67,17 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
  * Ej: AnalizarRF(&Recibido);
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: 97 ROM
- * -1 Canal + Mantenido: 110 ROM
- * -4 Canales: 131 ROM
- * -4 Canales + Mantenido: 146 ROM
+ * -1 Canal: 96 ROM
+ * -4 Canales: x ROM
  */
 short AnalizarRF(rfRemote* DatosRF){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
-	ApagarRF();			//apago RF para que no interfieran las interrupciones
+	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
 #else
-
-	#ifdef RF_MANTENIDO
-	RestartRFmantenido();
-	
-	//si se esta manteniendo un canal salgo de aqui
-	if(RFmantenido == TRUE){
-		EncenderRF();	//vuelvo a enceder RF
-		return(TRUE);
-	}
-	#endif
 	
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
@@ -143,12 +101,13 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#endif
 	}
 	
-	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	RestartRFmantenido();
-	#endif
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
 
-	EncenderRF();	//vuelvo a enceder RF
+	//EncenderRF();	//vuelvo a enceder RF
 	return(Match);
 #endif
 }
