@@ -163,6 +163,9 @@ void ApagarRF(void){
  * guardada, lo que hace practicamente imposible que un ruido al azar pueda 
  * activar nuestro dispositivo.
  * 
+ * Utiliza el SYNC como final de la trama de pulsos. En los mandos learning code
+ * el SYNC se envia al principio, lo que hace que se pierda la primer trama de datos
+ * 
  * Ocupa unos 126 de ROM
  */
 short DataFrameComplete(void){
@@ -176,7 +179,7 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
 			if(CountedBits == BUFFER_SIZE){		//data frame complete?
 				CountedBits = 0;		//restart counted bits
-				//rfBuffer.Bytes.Nul = 0;
+				rfBuffer.Bytes.Nul = 0;
 				RestartRFmantenido();
 				return(TRUE);			//data frame complete, returns TRUE
 			}
@@ -199,6 +202,51 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 	}
 	else{
 		CountedBits = 0;	//noise
+	}
+	
+	return(FALSE);			//incomplete data frame, returns FALSE
+}
+
+/*
+ * Utiliza el SYNC como inicio de la trama
+ */
+short DataFrameComplete2(void){
+int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+		
+	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
+		
+		/* PULSO SYNC */
+		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
+			CountedBits = 0;		//restart counted bits
+			flagPulseSync = TRUE;
+		}
+		else{
+			/* PULSO CERO */
+			if(HighPulseDuration < dutyLowMax){
+				shift_right(&rfBuffer,3,0);	//shift in received bit
+			}
+			/* PULSO UNO */
+			else{
+				shift_right(&rfBuffer,3,1);	//shift in received bit
+			}
+			
+			if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
+				++CountedBits;			//adds one
+		}
+		
+		if(CountedBits == BUFFER_SIZE){		//data frame complete?
+			CountedBits = 0;		//restart counted bits
+			flagPulseSync = FALSE;
+			rfBuffer.Bytes.Nul = 0;	//clear the null byte, as it may have spureus data and will not match with the expected value
+			RestartRFmantenido();
+			return(TRUE);			//data frame complete, returns TRUE
+		}
+	}
+	else{
+		CountedBits = 0;	//noise
+		flagPulseSync = FALSE;
 	}
 	
 	return(FALSE);			//incomplete data frame, returns FALSE
@@ -263,7 +311,8 @@ short Ready = FALSE;
 	
 	if(flagPulse == TRUE){				//comprueba si se recibio pulso
 		flagPulse = FALSE;				//limpia flag
-		Ready = DataFrameComplete();
+		//Ready = DataFrameComplete();
+		Ready = DataFrameComplete2();
 	}
 	
 	return(Ready);

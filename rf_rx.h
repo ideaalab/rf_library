@@ -113,6 +113,7 @@
 #define RF_MANTENIDO_TIME_OUT_US	(RF_MANTENIDO_TIME_OUT * 1000)	//tiempo en uS para que se considere que se ha dejado de pulsar el boton
 
 /* VARIABLES GLOBALES */
+short flagPulseSync = FALSE;
 short flagPulse = FALSE;			//indica si hay un pulso para contabilizar
 short FallingFlag = FALSE;			//indica si hubo un flanco de bajada
 short RisingFlag = FALSE;			//inidca si hubo un flanco de subida

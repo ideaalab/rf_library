@@ -20,6 +20,8 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#warning "Sin implementar"
 #else
 
+	//printf("\r\nR : 0x %08LX\r\n", Recibido.Completo);
+	
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){
@@ -28,6 +30,7 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//cuando solo hay un canal podemos optimizar el codigo
 	#if NUM_CANALES_RF == 1
 		//printf("M%u: ", m);
+		//printf("0x %08LX\r\n", MemRF[m][0].Completo);
 		
 		if(Recibido.Completo == MemRF[m][0].Completo){
 			bit_set(ButtonMatch[m], 0);	//marco el canal 1 de cada mando que se haya presionado
