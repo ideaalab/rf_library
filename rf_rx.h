@@ -133,15 +133,10 @@
 #endif
 
 /* VARIABLES GLOBALES */
-int1 flagPulseSync = FALSE;
 int1 flagPulse = FALSE;				//indica si hay un pulso para contabilizar
-//int1 validFrame = FALSE;			//indica si hubo un frame valido
-int1 FallingFlag = FALSE;			//indica si hubo un flanco de bajada
-int1 RisingFlag = FALSE;			//inidca si hubo un flanco de subida
 int1 RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un mando a distancia
 
 int8 CountedBits = 0;				//numero de bits contados
-//int8 Duty = 0;					//duty cycle del pulso
 
 int16 Cycles = 0;					//vueltas del timer0/1
 int16 CountedCycles = 0;			//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
@@ -166,7 +161,7 @@ void RF_timer_isr(void);
 void EncenderRF(void);
 void ApagarRF(void);
 short DataFrameComplete(void);
-void CalcTimes(void);
+short CalcTimes(void);
 short DataReady(void);
 int32 GetRFTime(void);
 void RestartRFmantenido(void);

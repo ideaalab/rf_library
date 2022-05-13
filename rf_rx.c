@@ -12,15 +12,10 @@ void EXT_isr(void){
 	if(INTEDG == RISING){
 		SET_TIMER_VAL(0);	//reset timer
 		Cycles = 0;			//reset cycles
-		RisingFlag = TRUE;	//indicamos que hubo un flanco de subida
-		INTEDG = FALLING;	//invertimos el flanco de interrupcion
 	}
-	//flanco descendente -> termino la parte alta del pulso
-	// __|̅ ̅ ↓__
-	else{
-		FallingFlag = TRUE;
-		INTEDG = RISING;	//invertimos el flanco de interrupcion
-	}
+	
+	flagPulse = TRUE;
+	INTEDG = !INTEDG;	//invertimos el flanco de interrupcion
 }
 
 
@@ -154,7 +149,7 @@ short DataFrameComplete(void){
  * Utiliza el SYNC como final de la trama de pulsos. En los mandos learning code
  * el SYNC se envia al principio, lo que hace que se pierda la primer trama de datos
  * 
- * Ocupa unos 138 de ROM
+ * Ocupa unos 143 de ROM
  */
 short DataFrameComplete(void){
 int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
@@ -165,17 +160,17 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 		
 		/* PULSO SYNC */
 		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
-			if(CountedBits == BUFFER_SIZE){		//data frame complete?
-				//CountedBits = 0;		//restart counted bits
+			if(CountedBits == BUFFER_SIZE){	//data frame complete?
+				CountedBits = 0;			//restart counted bits
 				rfBuffer.Bytes.Nul = 0;
 				RestartRFmantenido();
 				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
-				return(TRUE);			//data frame complete, returns TRUE
+				return(TRUE);				//data frame complete, returns TRUE
 			}
 
-			CountedBits = 0;		//restart counted bits
+			CountedBits = 0;				//restart counted bits
 		}
 		else{
 			/* PULSO CERO */
@@ -187,12 +182,13 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				shift_right(&rfBuffer,3,1);	//shift in received bit
 			}
 			
-			if(CountedBits < BUFFER_SIZE)		//no more than BUFFER_SIZE
-				++CountedBits;			//adds one
+			if(CountedBits < BUFFER_SIZE)	//no more than BUFFER_SIZE
+				++CountedBits;				//adds one
 		}
 	}
 	else{
 		CountedBits = 0;	//noise
+		TotalFrameDuration = 0;
 	}
 	
 	return(FALSE);			//incomplete data frame, returns FALSE
@@ -205,6 +201,7 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Ocupa unos 153 de ROM
  */
 short DataFrameComplete(void){
+static int1 flagPulseSync = FALSE;
 int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
 int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
 int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
@@ -260,27 +257,32 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 
 /*
  * Calcula el tiempo transcurrido entre un flanco y el siguiente
+ * En el flanco descendente (↓) cuenta el la parte alta del pulso
+ * En el flanco ascendente (↑) cuenta la duracion total del pulso
+ * Se entiende un pulso completo en el flanco ascendente
+ * Devuelve TRUE si hay un pulso completo
+ * 
+ * Ocupa 82 de ROM
  */
-void CalcTimes(void){
+short CalcTimes(void){
+int1 PulseReady = FALSE;
 int32 time;
 
-	if((RisingFlag == TRUE) || (FallingFlag == TRUE)){
+	if(flagPulse == TRUE){
+		flagPulse = FALSE;
 		time = ((int32)CountedCycles * TIMER_MAX_VAL) + TmrVal;		//obtenemos duracion del ultimo pulso
 		
-		//flanco ascendente __↑̅̅|__
-		if(RisingFlag == TRUE){
-			RisingFlag = FALSE;
+		//hubo flanco ascendente __↑̅̅|__
+		if(INTEDG == FALLING){
 			TotalPulseDuration = time;
 			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
-			flagPulse = TRUE;
+			PulseReady = TRUE;
 		}
-		//flanco descendente __|̅̅↓__
+		//hubo flanco descendente __|̅̅↓__
 		else{
-			FallingFlag = FALSE;
 			HighPulseDuration = time;
 		}
 		
-
 		TimeSinceLastValidFrame = TimeSinceLastValidFrame + time;	//guardamos duracion del ultimo pulso
 	}
 	
@@ -289,6 +291,7 @@ int32 time;
 		RFmantenido = FALSE;
 	}
 	
+	return(PulseReady);
 }
 
 /*
@@ -297,11 +300,8 @@ int32 time;
  */
 short DataReady(void){
 short Ready = FALSE;
-
-	CalcTimes();
 	
-	if(flagPulse == TRUE){				//comprueba si se recibio pulso
-		flagPulse = FALSE;				//limpia flag
+	if(CalcTimes() == TRUE){				//comprueba si se recibio pulso
 		Ready = DataFrameComplete();
 	}
 	
