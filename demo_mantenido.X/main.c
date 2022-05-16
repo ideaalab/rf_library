@@ -186,6 +186,7 @@ void ComprobarRF(void){
 	/*if((RFMantenido == FALSE) && (flagSync == FALSE)){
 		output_low(P_LED1);
 	}*/
+	//el led se enciende/apaga segun la variable RFmantenido
 	if(flagSync == FALSE){
 		LED1 = RFmantenido;
 	}
