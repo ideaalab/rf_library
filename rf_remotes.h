@@ -371,7 +371,7 @@ typedef union{
 	}Ch8;	//8 ch remote
 	
 	/* SPECIAL REMOTE */
-	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) ¿esta bien?
+	//A0 A1 A2 A3 A4 A5 T0 T1 D0 D1 C0 C1 (orden de los datos recibidos, cada uno son 2 bits, C1 es MSB) ï¿½esta bien?
 	struct{
 		int AddrLo;		//bits 0-7
 		int AddrHi:4;	//bits 8-11

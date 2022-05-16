@@ -7,7 +7,7 @@
  * =============================================================================
  * QUE HACE ESTA LIBRERIA?
  * 
- * >Permite decodificar se�ales RF codificadas con encoders como PT2240B, PT2260,
+ * >Permite decodificar se�ales RF codificadas con encoders como PT2240B, PT2260,
  * PT2262, PT2264, etc.
  * =============================================================================
  * INTRODUCCION
@@ -26,9 +26,21 @@
  * hay que declarar un define RF_RX_TIMER0 antes de llamar a la libreria.
  * #define RF_RX_TIMER0
  * 
- * >Si queremos que se cuente el tiempo total de la trama de datos recibida
- * tenemos que declarar RF_COUNT_TIME.
- * #define RF_COUNT_TIME
+ * >Desde que se recibe la señal se espera otra señal como maximo 200mS.
+ * Despues de ese tiempo se considera que el boton del mando se "solto". Si se
+ * quiere usar otro tiempo hay que declarar RF_MANTENIDO_TIME_OUT con el valor
+ * deseado en mS. Este valor mientras mayor es, mas tolerante se vuelve a cortes
+ * e interferencias en la recepcion, pero tambien introduce mas retardo en la
+ * recepcion.
+ * #define RF_MANTENIDO_TIME_OUT	500
+ * 
+ * >La funcion DataFrameComplete() que se encarga de la decodificacion se va
+ * optimizando cada vez mas, pero las versiones anteriores se mantienen por
+ * compatibilidad, pruebas y referencia. En caso de querer usar una version
+ * anterior a la mas nueva hay que declarar un define con la version deseada:
+ * #define RF_DECODE_V0
+ * #define RF_DECODE_V1
+ * 
  * =============================================================================
  * VARIABLES
  * 
@@ -56,6 +68,9 @@
  *			//data received is on rfBuffer
  *			... execute instructions
  *		}
+ * 
+ * <Si no se usa la libreria rf_rx_aux.c entonces RFmantenido no se activa solo,
+ * hay que ponerlo a TRUE manualmente cuando recibamos una señal
  * =============================================================================
  * RECURSOS USADOS
  * 
@@ -70,10 +85,6 @@
 #include "rf_remotes.h"
 
 /* COMPROBACIONES DE COMPATIBILIDAD */
-#if getenv("CLOCK") == 4000000
-#warning "Las pruebas sugieren que el receptor no funciona a 4Mhz"
-#endif
-
 #ifdef RF_TIMER0
 	#error "Cambiar RF_TIMER0 por RF_RX_TIMER0"
 #endif
@@ -82,6 +93,12 @@
 #endif
 #ifdef RF_COUNT_TIME
 	#error "Cambiar RF_COUNT_TIME por RF_RX_COUNT_TIME"
+#endif
+#ifdef RF_RX_COUNT_TIME
+	#warning "Ya no es necesario declarar esto. El tiempo siempre se cuenta"
+#endif
+#ifdef RF_MANTENIDO
+	#warning "Ya no es necesario declarar esto. RFmantenido siempre esta activo"
 #endif
 
 #bit INTEDG = getenv("bit:INTEDG")
@@ -93,56 +110,60 @@
 	#priority timer1,ext
 #endif
 
+#ifndef RF_MANTENIDO_TIME_OUT
+#define RF_MANTENIDO_TIME_OUT	200	//mS
+#endif
+
 /* CONSTANTS */
 #define FALLING		0	//falling edge
 #define RISING		1	//rising edge
 
 #define MIN_PULSE	300	//minimum duration allowed for received pulse, in uS (theoreticaly is 16*ALFA)
 #define BUFFER_SIZE	24	//length of the data stream received
-
-//--- Duty cicle
-#define	MIN_ZERO	15		
-#define ZERO		25		//theoretical
-#define MAX_ZERO	35
-
-#define	MIN_ONE		65
-#define ONE			75		//theoretical
-#define MAX_ONE		85
-
-#define MIN_SYNC	1
-#define SYNC		3.125	//theoretical
-#define MAX_SYNC	5
-
-/* VARIABLES GLOBALES */
-short flagPulse = FALSE;	//indica si hay un pulso para contabilizar
-short FallingFlag = FALSE;	//indica si hubo un flanco de bajada
-short RisingFlag = FALSE;	//inidca si hubo un flanco de subida
-rfRemote rfBuffer;			//buffer de recepcion
-int CountedBits = 0;		//numero de bits contados
-int Duty = 0;				//duty cycle del pulso
-long Cycles = 0;			//vueltas del timer0/1
-long CountedCycles = 0;		//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
-long HighDuration = 0;		//duracion de la parte alta del pulso
-long TotalDuration = 0;		//duracion del pulso completo (alta + baja))
+#define RF_MANTENIDO_TIME_OUT_US	(RF_MANTENIDO_TIME_OUT * 1000)	//tiempo en uS para que se considere que se ha dejado de pulsar el boton
 
 #ifdef RF_RX_TIMER0
-int Tmr0 = 0;
+#define TIMER_MAX_VAL		256
+#define GET_TIMER_VAL		get_timer0()
+#define SET_TIMER_VAL(x)	set_timer0(x)
 #else
-long Tmr1 = 0;
+#define TIMER_MAX_VAL		65536
+#define GET_TIMER_VAL		get_timer1();
+#define SET_TIMER_VAL(x)	set_timer1(x)
 #endif
 
-#ifdef RF_RX_COUNT_TIME
-int32 TotalTime = 0;	//duracion de todos los pulsos recibidos
+/* VARIABLES GLOBALES */
+int1 flagPulse = FALSE;				//indica si hay un pulso para contabilizar
+int1 RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un mando a distancia
+
+int8 CountedBits = 0;				//numero de bits contados
+
+int16 Cycles = 0;					//vueltas del timer0/1
+int16 CountedCycles = 0;			//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
+int16 HighPulseDuration = 0;		//duracion de la parte alta del pulso
+int16 TotalPulseDuration = 0;		//duracion del pulso completo (alta + baja))
+
+#ifdef RF_RX_TIMER0
+int8 TmrVal = 0;
+#else
+int16 TmrVal = 0;
 #endif
-	
+
+int32 LastFrameDuration = 0;		//duracion de la ultima trama recibida
+int32 TotalFrameDuration = 0;		//duracion de todos los pulsos recibidos
+int32 TimeSinceLastValidFrame = 0;	//tiempo transcurrido desde el ultimo dato valido
+
+rfRemote rfBuffer;					//buffer de recepcion
+
 /* PROTOTIPOS */
+void EXT_isr(void);
+void RF_timer_isr(void);
 void EncenderRF(void);
 void ApagarRF(void);
 short DataFrameComplete(void);
-void CalcTimes(void);
+short CalcTimes(void);
 short DataReady(void);
-#ifdef RF_RX_COUNT_TIME
 int32 GetRFTime(void);
-#endif
+void RestartRFmantenido(void);
 
 #endif	/* RF_RX_H */

@@ -1,56 +1,6 @@
 #include "rf_remotes.h"
 #include "rf_rx_aux.h"
 
-/* 
- * Esto permite saber si se mantiene presionado un boton de un mando a distancia
- * Cada vez que se reciba una trama correcta de RF y coincida con un mando hay
- * que poner a 0 la variable ContMantenidoTimeOut
- * El mantenido NO FUNCIONA BIEN CON CIRCUITOS DE SERVOS ya que introducen mucho
- * ruido y el receptor no consigue decodificar bien la señal, provocando "ausencia"
- * de tramas correctas.
- */
-#ifdef RF_MANTENIDO
-/*
- * Interrupcion del timer 2
- * Se usa para simular pulsacion mantenida por RF
- * Ocupa 13 de ROM
- */
-#int_TIMER2
-void Timer2_isr(void){
-	//compruebo si sigue mantenido el boton del mando
-	if(RFmantenido == TRUE){
-		ContTimeOutRFmantenido++;	//incrementamos contador
-		
-		if(ContTimeOutRFmantenido >= VUELTAS_TIME_OUT_RF_MANTENIDO){	
-			RestartRFmantenido();
-			LED = FALSE;
-			RFmantenido = FALSE;
-		}
-	}
-}
-
-/*
- * Configura el Timer 2 para interrumpir cada 10mS
- * Ocupa 13 de ROM
- */
-void RF_mantenido_init(void){
-#IF getenv("CLOCK") == 4000000
-	setup_timer_2(T2_DIV_BY_4,249,10);
-#ELIF getenv("CLOCK") == 8000000
-	setup_timer_2(T2_DIV_BY_16,249,5);
-#ELIF getenv("CLOCK") == 16000000
-	setup_timer_2(T2_DIV_BY_16,249,10);
-#ELIF getenv("CLOCK") == 32000000
-	setup_timer_2(T2_DIV_BY_64,249,5);
-#ELSE
-	#ERROR La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz
-#ENDIF
-
-	enable_interrupts(INT_TIMER2);
-	enable_interrupts(GLOBAL);		//enable global interrupt
-}
-#endif
-
 /*
  * Mira si los datos recibidos por RF se corresponden con algun mando almacenado
  * Si hay alguna coincidencia se guarda en la variable ButtonMatch[] y la
@@ -58,30 +8,20 @@ void RF_mantenido_init(void){
  * Utiliza los valores de la variable "Recibido" para comparar
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: 80 ROM
- * -1 Canal + Mantenido: 93 ROM
- * -4 Canales: 106 ROM
- * -4 Canales + Mantenido: 121 ROM
+ * -1 Canal: 79 ROM
+ * -4 Canales: x ROM
  */
 short AnalizarRF(void){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
-	ApagarRF();			//apago RF para que no interfieran las interrupciones
+	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
 #else
 
-	#ifdef RF_MANTENIDO
-	RestartRFmantenido();
+	//printf("\r\nR : 0x %08LX\r\n", Recibido.Completo);
 	
-	//si se esta manteniendo un canal salgo de aqui
-	if(RFmantenido == TRUE){
-		EncenderRF();	//vuelvo a enceder RF
-		return(TRUE);	//salgo diciendo que hubo coincidencia
-	}
-	#endif
-
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){
@@ -89,9 +29,16 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 		
 	//cuando solo hay un canal podemos optimizar el codigo
 	#if NUM_CANALES_RF == 1
+		//printf("M%u: ", m);
+		//printf("0x %08LX\r\n", MemRF[m][0].Completo);
+		
 		if(Recibido.Completo == MemRF[m][0].Completo){
 			bit_set(ButtonMatch[m], 0);	//marco el canal 1 de cada mando que se haya presionado
 			Match = TRUE;
+			/*printf("Y\r\n");
+		}
+		else{
+			printf("N\r\n");*/
 		}
 	#else
 		//recorre los canales
@@ -104,12 +51,13 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#endif
 	}
 	
-	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	RestartRFmantenido();
-	#endif
-
-	EncenderRF();	//vuelvo a enceder RF
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
+	
+	//EncenderRF();	//vuelvo a enceder RF
 	return(Match);
 #endif
 }
@@ -122,29 +70,17 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
  * Ej: AnalizarRF(&Recibido);
  * Ocupa:
  * -Direcciones: x ROM
- * -1 Canal: 97 ROM
- * -1 Canal + Mantenido: 110 ROM
- * -4 Canales: 131 ROM
- * -4 Canales + Mantenido: 146 ROM
+ * -1 Canal: 96 ROM
+ * -4 Canales: x ROM
  */
 short AnalizarRF(rfRemote* DatosRF){
 short Match = FALSE;	//indica si hubo alguna coincidencia
 	
-	ApagarRF();			//apago RF para que no interfieran las interrupciones
+	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
 	#warning "Sin implementar"
 #else
-
-	#ifdef RF_MANTENIDO
-	RestartRFmantenido();
-	
-	//si se esta manteniendo un canal salgo de aqui
-	if(RFmantenido == TRUE){
-		EncenderRF();	//vuelvo a enceder RF
-		return(TRUE);
-	}
-	#endif
 	
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
@@ -168,12 +104,13 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	#endif
 	}
 	
-	#ifdef RF_MANTENIDO
 	RFmantenido = Match;
-	RestartRFmantenido();
-	#endif
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
 
-	EncenderRF();	//vuelvo a enceder RF
+	//EncenderRF();	//vuelvo a enceder RF
 	return(Match);
 #endif
 }
@@ -396,10 +333,3 @@ void MoverBloque(int from, int to, int offset){
 	
 	enable_interrupts(GLOBAL);
 }
-
-#ifdef RF_MANTENIDO
-void RestartRFmantenido(void){
-	set_timer2(0);
-	ContTimeOutRFmantenido = 0;
-}
-#endif
