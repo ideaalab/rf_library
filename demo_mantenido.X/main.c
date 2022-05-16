@@ -2,16 +2,12 @@
 #device adc=8
 #use delay(clock=32000000)
 
-//#define DEBUG
-
 #FUSES INTRC_IO, NOWDT, PUT, NOMCLR, NOPROTECT, NOCPD, BROWNOUT, NOCLKOUT, NOIESO, NOFCMEN
 #FUSES NOWRT, PLL_SW, NOSTVREN, BORV19, NODEBUG, NOLVP
 
 #use fast_io(a)               //se accede al puerto a como memoria
 #byte PORTA	= getenv("SFR:PORTA")
 #byte PORTC	= getenv("SFR:PORTC")
-
-#define	PRESIONADO	0
 
 /* PORT A */
 //pins
@@ -62,10 +58,14 @@
 /* VARIABLES */
 short HayMandos;					//indica si hay algun mando grabado en memoria
 
+/* CONSTANTES GENERALES */
+#define DEBUG
+#define	PRESIONADO	0
+
 /* CONSTANTES PARA RF */
 #define RF_RX_TIMER0				//usamos el timer0 para RF
-#define NUM_MANDOS_RF			3	//permite memorizar 3 mandos
-#define NUM_CANALES_RF			1	//vamos a usar el btn mantenido por RF de RF_RX_AUX
+#define NUM_MANDOS_RF			10	//permite memorizar 3 mandos
+#define NUM_CANALES_RF			1	//un canal por cada mando
 #define RF_MANTENIDO_TIME_OUT	150	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
 #define POS_MEM_MANDOS_START_RF	0	//a partir de aqui se graban los mandos
 
@@ -82,19 +82,19 @@ void ComprobarRF(void);
 void main(void){
 	setup_oscillator(OSC_8MHZ|OSC_PLL_ON);	//configura oscilador interno
 	setup_wdt(WDT_OFF);						//configuracion wdt
-	//setup_timer_0(T0_INTERNAL|T0_DIV_1);		//lo configura rf_in_init()
-	//setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);	//
-	//setup_timer_2(T2_DIV_BY_64,249,5);		//
+	//setup_timer_0(T0_INTERNAL|T0_DIV_1);	//lo configura EncenderRF()
+	//setup_timer_1(T1_INTERNAL|T1_DIV_BY_1);	//
+	//setup_timer_2(T2_DIV_BY_1,255,1);		//
 	setup_dac(DAC_OFF);						//configura DAC
 	setup_adc(ADC_CLOCK_INTERNAL);			//configura ADC
 	setup_adc_ports(NO_ANALOGS);			//configura ADC
-	//setup_ccp1(CCP_COMPARE_INT);				//lo configura rf_in_init()
+	//setup_ccp1(CCP_COMPARE_INT);			//lo configura EncenderRF()
 	setup_spi(SPI_DISABLED);				//configura SPI
 	//setup_uart(FALSE);					//configura UART
 	setup_vref(VREF_OFF);					//no se usa voltaje de referencia
 	setup_comparator(NC_NC_NC_NC);			//comparador apagado
 	
-	//enable_interrupts(GLOBAL);				//lo habilitan otras funciones
+	//enable_interrupts(GLOBAL);			//lo habilita EncenderRF()
 	
 	set_tris_a(TRIS_A);						//configura pines
 	port_a_pullups(WPU_A);					//configura weak pull ups
@@ -109,13 +109,6 @@ void main(void){
 	EncenderRF();
 
 	do{
-		/*
-		LED1 = BTN1;
-		LED2 = BTN2;
-		output_bit(P_LED1, input(P_BTN1));
-		output_bit(P_LED2, input(P_BTN2));
-		*/
-		
 		if(BTN1 == PRESIONADO){
 			flagSync = TRUE;
 			output_high(P_LED2);
@@ -130,7 +123,7 @@ void main(void){
 			for(int x = 0; x<NUM_MANDOS_RF; x++){
 				int PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
 				
-				printf("0x %02X %02X %02X\r\n", MemRF[x][0].Bytes.Hi, MemRF[x][0].Bytes.Mi, MemRF[x][0].Bytes.Lo);
+				printf("%02u: 0x %02X %02X %02X\r\n", x, MemRF[x][0].Bytes.Hi, MemRF[x][0].Bytes.Mi, MemRF[x][0].Bytes.Lo);
 			}
 			printf("\r\n");
 			
@@ -174,13 +167,9 @@ void ComprobarRF(void){
 		else{
 			if(AnalizarRF() == TRUE){
 #ifdef DEBUG
-			printf(" M ");	//match con un mando en la memoria
+				printf(" M ");	//match con un mando en la memoria
 #endif
-				output_high(P_LED1);
-				
-				/*output_high(P_LED2);
-				delay_us(10);
-				output_low(P_LED2);*/
+				//output_high(P_LED1);	//no hace falta. El LED se enciende/apaga con la variable RFmantenido.
 			}
 			else{
 #ifdef DEBUG
@@ -194,7 +183,10 @@ void ComprobarRF(void){
 	}
 	
 	//#warning "que pasa si esta mantenido y se presiona el boton de sync?" -> el proceso de sync tiene un delay de 1000mS que "bloquea" el programa y la señal se deja de analizar por lo que RFmantenido vuelve a FALSE
-	if((RFMantenido == FALSE) && (flagSync == FALSE)){
+	/*if((RFMantenido == FALSE) && (flagSync == FALSE)){
 		output_low(P_LED1);
+	}*/
+	if(flagSync == FALSE){
+		LED1 = RFmantenido;
 	}
 }
