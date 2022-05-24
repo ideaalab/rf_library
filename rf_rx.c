@@ -235,6 +235,10 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
 				RestartRFmantenido();
 				
+				LED1 = false;
+				delay_us(1);
+				LED1 = true;
+				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
 				return(TRUE);				//data frame complete, returns TRUE
@@ -264,7 +268,7 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * 
  * Ocupa 82 de ROM
  */
-short CalcTimes(void){
+/*short CalcTimes(void){
 int1 PulseReady = FALSE;
 int32 time;
 
@@ -287,6 +291,41 @@ int32 time;
 	}
 	
 	if(TimeSinceLastValidFrame > RF_MANTENIDO_TIME_OUT_US){
+		RestartRFmantenido();
+		RFmantenido = FALSE;
+	}
+	
+	return(PulseReady);
+}*/
+
+short CalcTimes(void){
+int1 PulseReady = FALSE;
+int32 time = 0;
+
+	if(flagPulse == TRUE){
+		flagPulse = FALSE;
+		time = ((int32)CountedCycles * TIMER_MAX_VAL) + TmrVal;		//obtenemos duracion del ultimo pulso
+		
+		//hubo flanco ascendente __↑̅̅|__
+		if(INTEDG == FALLING){
+			TotalPulseDuration = time;
+			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
+			PulseReady = TRUE;
+			
+			TimeSinceLastValidFrame = TimeSinceLastValidFrame + TotalPulseDuration;	//guardamos duracion del ultimo pulso
+			time = TimeSinceLastValidFrame;
+		}
+		//hubo flanco descendente __|̅̅↓__
+		else{
+			HighPulseDuration = time;
+		}
+	}
+	
+	if(time == 0){
+		time = TimeSinceLastValidFrame + ((int32)Cycles * TIMER_MAX_VAL) + GET_TIMER_VAL;
+	}
+	
+	if(time > RF_MANTENIDO_TIME_OUT_US){
 		RestartRFmantenido();
 		RFmantenido = FALSE;
 	}
