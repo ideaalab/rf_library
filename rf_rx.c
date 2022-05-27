@@ -152,9 +152,9 @@ short DataFrameComplete(void){
  * Ocupa unos 143 de ROM
  */
 short DataFrameComplete(void){
-int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
-int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
-int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
 		
 	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
@@ -198,13 +198,13 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 /* 
  * Parecida a v1, pero utiliza el SYNC como inicio de la trama
  * 
- * Ocupa unos 193 de ROM
+ * Ocupa unos 161 de ROM
  */
 short DataFrameComplete(void){
 static int1 flagPulseSync = FALSE;
-int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
-int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
-int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
 		
 	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
@@ -241,13 +241,14 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
+				
 				return(TRUE);				//data frame complete, returns TRUE
 			}
 		}
 		else{
 			CountedBits = 0;	//noise
 			TotalFrameDuration = 0;
-		}
+	}
 	}
 	else{
 		CountedBits = 0;	//noise
