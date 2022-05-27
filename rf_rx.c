@@ -198,7 +198,7 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 /* 
  * Parecida a v1, pero utiliza el SYNC como inicio de la trama
  * 
- * Ocupa unos 153 de ROM
+ * Ocupa unos 193 de ROM
  */
 short DataFrameComplete(void){
 static int1 flagPulseSync = FALSE;
@@ -235,9 +235,9 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
 				RestartRFmantenido();
 				
-				LED1 = false;
+				/*LED1 = false;
 				delay_us(1);
-				LED1 = true;
+				LED1 = true;*/
 				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
@@ -298,33 +298,44 @@ int32 time;
 	return(PulseReady);
 }*/
 
+/*
+ * Hay que hacer calculos de tiempo con la duracion de los pulsos
+ * HighPulseDuration = duracion de la parte alta del pulso
+ * TotalPulseDuration = duracion del pulso completo (H+L)
+ * TotalFrameDuratio = duracion de todos los pulsos que componen una trama
+ * TimeSinceLastValidFrame = tiempo transcurrido desde la ultima trama recibida
+ * 
+ * Ocupa 175 de ROM
+ */
 short CalcTimes(void){
 int1 PulseReady = FALSE;
-int32 time = 0;
+int32 time = 0;	//variable temporal para almacenar tiempos
 
+	//si hubo pulso cuenta duracion del pulso, duracion de la trama y tiempo desde ultima trama
 	if(flagPulse == TRUE){
 		flagPulse = FALSE;
 		time = ((int32)CountedCycles * TIMER_MAX_VAL) + TmrVal;		//obtenemos duracion del ultimo pulso
 		
 		//hubo flanco ascendente __↑̅̅|__
 		if(INTEDG == FALLING){
-			TotalPulseDuration = time;
-			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
-			PulseReady = TRUE;
+			TotalPulseDuration = time;												//guardamos tiempo desde el ultimo pulso
+			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;			//incrementamos duracion de la trama
+			TimeSinceLastValidFrame = TimeSinceLastValidFrame + TotalPulseDuration;	//incrementamos tiempo desde ultima trama
 			
-			TimeSinceLastValidFrame = TimeSinceLastValidFrame + TotalPulseDuration;	//guardamos duracion del ultimo pulso
 			time = TimeSinceLastValidFrame;
+			PulseReady = TRUE;
 		}
 		//hubo flanco descendente __|̅̅↓__
 		else{
 			HighPulseDuration = time;
 		}
 	}
-	
-	if(time == 0){
+	//si no hubo pulso cuenta el tiempo desde la ultima trama
+	else{
 		time = TimeSinceLastValidFrame + ((int32)Cycles * TIMER_MAX_VAL) + GET_TIMER_VAL;
 	}
 	
+	//si el tiempo es mayor al establecido para RFmantenido, entonces lo apaga
 	if(time > RF_MANTENIDO_TIME_OUT_US){
 		RestartRFmantenido();
 		RFmantenido = FALSE;
@@ -338,13 +349,15 @@ int32 time = 0;
  * los bits de RF. Devuelve TRUE cuando la trama esta completa
  */
 short DataReady(void){
-short Ready = FALSE;
+//short Ready = FALSE;
 	
 	if(CalcTimes() == TRUE){				//comprueba si se recibio pulso
-		Ready = DataFrameComplete();
+		//Ready = DataFrameComplete();
+		return(DataFrameComplete());
 	}
 	
-	return(Ready);
+	//return(Ready);
+	//return(false);	//default behaviour
 }
 
 /*

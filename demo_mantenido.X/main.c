@@ -41,16 +41,14 @@
 
 //defines
 #define P_BTN2		PIN_C0			//I
-#define P_C1		PIN_C1			//I
-#define P_C2		PIN_C2			//I
+#define P_C1		PIN_C1			//O
+#define P_C2		PIN_C2			//O
 #define P_C3		PIN_C3			//I
 #define P_C4		PIN_C4			//I
 #define P_C5		PIN_C5			//I
-#define P_C6		PIN_C6			//I
-#define P_C7		PIN_C7			//I
 
 //Bits			    543210
-#define TRIS_C	0b11110011			//define cuales son entradas y cuales salidas
+#define TRIS_C	0b11111001			//define cuales son entradas y cuales salidas
 #define WPU_C	0b00000001			//define los weak pull up
 
 /* VARIABLES */
@@ -64,7 +62,7 @@ short HayMandos;					//indica si hay algun mando grabado en memoria
 #define RF_RX_TIMER0				//usamos el timer0 para RF
 #define NUM_MANDOS_RF			10	//permite memorizar 3 mandos
 #define NUM_CANALES_RF			1	//un canal por cada mando
-#define RF_MANTENIDO_TIME_OUT	300	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
+#define RF_MANTENIDO_TIME_OUT	200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
 #define POS_MEM_MANDOS_START_RF	0	//a partir de aqui se graban los mandos
 
 #ifdef DEBUG
@@ -106,7 +104,9 @@ void main(void){
 	HayMandos = LeerMandos();	//lee los mandos grabados
 	EncenderRF();
 	
-	//printf("\r\n%Lu", RF_MANTENIDO_TIME_OUT_US);
+	/*DataReady();
+	CalcTimes();
+	DataFrameComplete();*/
 
 	do{
 		if(BTN1 == PRESIONADO){
@@ -138,7 +138,7 @@ void main(void){
 /*
  * Comprueba si llego alguna trama RF
  */
-void ComprobarRF(void){
+void ComprobarRF(void){	
 	if(DataReady() == TRUE){   //data frame is on Buffer
 		RecibAnterior.Completo = Recibido.Completo;
 		Recibido.Completo = rfBuffer.Completo;
@@ -182,10 +182,6 @@ void ComprobarRF(void){
 #endif
 	}
 	
-	//#warning "que pasa si esta mantenido y se presiona el boton de sync?" -> el proceso de sync tiene un delay de 1000mS que "bloquea" el programa y la señal se deja de analizar por lo que RFmantenido vuelve a FALSE
-	/*if((RFMantenido == FALSE) && (flagSync == FALSE)){
-		output_low(P_LED1);
-	}*/
 	//el led se enciende/apaga segun la variable RFmantenido
 	if(flagSync == FALSE){
 		LED1 = RFmantenido;
