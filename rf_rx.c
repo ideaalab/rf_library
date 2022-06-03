@@ -270,45 +270,6 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Se entiende un pulso completo en el flanco ascendente
  * Devuelve TRUE si hay un pulso completo
  * 
- * Ocupa 82 de ROM
- */
-/*short CalcTimes(void){
-int1 PulseReady = FALSE;
-int32 time;
-
-	if(flagPulse == TRUE){
-		flagPulse = FALSE;
-		time = ((int32)CountedCycles * TIMER_MAX_VAL) + TmrVal;		//obtenemos duracion del ultimo pulso
-		
-		//hubo flanco ascendente __↑̅̅|__
-		if(INTEDG == FALLING){
-			TotalPulseDuration = time;
-			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
-			PulseReady = TRUE;
-		}
-		//hubo flanco descendente __|̅̅↓__
-		else{
-			HighPulseDuration = time;
-		}
-		
-		TimeSinceLastValidFrame = TimeSinceLastValidFrame + time;	//guardamos duracion del ultimo pulso
-	}
-	
-	if(TimeSinceLastValidFrame > RF_MANTENIDO_TIME_OUT_US){
-		RestartRFmantenido();
-		RFmantenido = FALSE;
-	}
-	
-	return(PulseReady);
-}*/
-
-/*
- * Calcula el tiempo transcurrido entre un flanco y el siguiente
- * En el flanco descendente (↓) cuenta el la parte alta del pulso
- * En el flanco ascendente (↑) cuenta la duracion total del pulso
- * Se entiende un pulso completo en el flanco ascendente
- * Devuelve TRUE si hay un pulso completo
- * 
  * Hay que hacer calculos de tiempo con la duracion de los pulsos
  * HighPulseDuration = duracion de la parte alta del pulso
  * TotalPulseDuration = duracion del pulso completo (H+L)
@@ -373,7 +334,7 @@ short DataReady(void){
 		return(DataFrameComplete());
 	}
 	
-	return(false);	//default behaviour
+	return(FALSE);	//default behaviour
 }
 
 /*
