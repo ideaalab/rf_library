@@ -38,36 +38,32 @@
 #bit C3			= PORTC.3			//
 #bit C4			= PORTC.4			//
 #bit C5			= PORTC.5			//
-#bit C6			= PORTC.6			//
-#bit C7			= PORTC.7			//
 
 //defines
 #define P_BTN2		PIN_C0			//I
-#define P_C1		PIN_C1			//I
-#define P_C2		PIN_C2			//I
+#define P_C1		PIN_C1			//O
+#define P_C2		PIN_C2			//O
 #define P_C3		PIN_C3			//I
 #define P_C4		PIN_C4			//I
 #define P_C5		PIN_C5			//I
-#define P_C6		PIN_C6			//I
-#define P_C7		PIN_C7			//I
 
-//Bits			  76543210
-#define TRIS_C	0b11111111			//define cuales son entradas y cuales salidas
+//Bits			    543210
+#define TRIS_C	0b11111001			//define cuales son entradas y cuales salidas
 #define WPU_C	0b00000001			//define los weak pull up
 
 /* VARIABLES */
 short HayMandos;					//indica si hay algun mando grabado en memoria
 
 /* CONSTANTES GENERALES */
-#define DEBUG
+//#define DEBUG
 #define	PRESIONADO	0
 
 /* CONSTANTES PARA RF */
 #define RF_RX_TIMER0				//usamos el timer0 para RF
-#define NUM_MANDOS_RF			10	//permite memorizar 3 mandos
+#define NUM_MANDOS_RF			10	//permite memorizar 10 mandos
 #define NUM_CANALES_RF			1	//un canal por cada mando
-#define RF_MANTENIDO_TIME_OUT	150	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
 #define POS_MEM_MANDOS_START_RF	0	//a partir de aqui se graban los mandos
+#define RF_MANTENIDO_TIME_OUT	200	//cuanto tiempo tiene que pasar para que se interprete como que no esta mantenido (en mS)
 
 #ifdef DEBUG
 #use rs232(baud=250000, xmit=P_SERIAL_TX, ERRORS)
@@ -81,8 +77,9 @@ void ComprobarRF(void);
 
 void main(void){
 	setup_oscillator(OSC_8MHZ|OSC_PLL_ON);	//configura oscilador interno
+	//setup_oscillator(OSC_4MHZ);				//configura oscilador interno
 	setup_wdt(WDT_OFF);						//configuracion wdt
-	//setup_timer_0(T0_INTERNAL|T0_DIV_1);	//lo configura EncenderRF()
+	//setup_timer_0(T0_INTERNAL|T0_DIV_1);	//
 	//setup_timer_1(T1_INTERNAL|T1_DIV_BY_1);	//
 	//setup_timer_2(T2_DIV_BY_1,255,1);		//
 	setup_dac(DAC_OFF);						//configura DAC
@@ -109,6 +106,9 @@ void main(void){
 	EncenderRF();
 
 	do{
+		ComprobarRF();	//comprobamos si se recibio algo por RF
+		
+		//emparejar un mando
 		if(BTN1 == PRESIONADO){
 			flagSync = TRUE;
 			output_high(P_LED2);
@@ -117,6 +117,7 @@ void main(void){
 		}
 		
 #ifdef DEBUG
+		//muestra los valores almacenados en la memoria EEPROM
 		if(BTN2 == PRESIONADO){
 			printf("\r\n - MEMORIA - \r\n");
 			
@@ -127,18 +128,16 @@ void main(void){
 			}
 			printf("\r\n");
 			
-			while(BTN2 == PRESIONADO){delay_ms(20);}
+			while(BTN2 == PRESIONADO){delay_ms(20);}	//antirebote
 		}
 #endif
-		
-		ComprobarRF();
-	}while(true);
+	}while(TRUE);
 }
 
 /*
  * Comprueba si llego alguna trama RF
  */
-void ComprobarRF(void){
+void ComprobarRF(void){	
 	if(DataReady() == TRUE){   //data frame is on Buffer
 		RecibAnterior.Completo = Recibido.Completo;
 		Recibido.Completo = rfBuffer.Completo;
@@ -169,7 +168,6 @@ void ComprobarRF(void){
 #ifdef DEBUG
 				printf(" M ");	//match con un mando en la memoria
 #endif
-				//output_high(P_LED1);	//no hace falta. El LED se enciende/apaga con la variable RFmantenido.
 			}
 			else{
 #ifdef DEBUG
@@ -182,10 +180,6 @@ void ComprobarRF(void){
 #endif
 	}
 	
-	//#warning "que pasa si esta mantenido y se presiona el boton de sync?" -> el proceso de sync tiene un delay de 1000mS que "bloquea" el programa y la señal se deja de analizar por lo que RFmantenido vuelve a FALSE
-	/*if((RFMantenido == FALSE) && (flagSync == FALSE)){
-		output_low(P_LED1);
-	}*/
 	//el led se enciende/apaga segun la variable RFmantenido
 	if(flagSync == FALSE){
 		LED1 = RFmantenido;

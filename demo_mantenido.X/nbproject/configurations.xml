@@ -63,7 +63,7 @@
         </archiverTool>
         <loading>
           <useAlternateLoadableFile>false</useAlternateLoadableFile>
-          <parseOnProdLoad>false</parseOnProdLoad>
+          <parseOnProdLoad>true</parseOnProdLoad>
           <alternateLoadableFile></alternateLoadableFile>
         </loading>
         <subordinates>
@@ -126,7 +126,7 @@
         <property key="close-after-compile" value="true"/>
         <property key="compile-for-icd" value="false"/>
         <property key="create-call-tree" value="true"/>
-        <property key="create-project-file" value="true"/>
+        <property key="create-project-file" value="false"/>
         <property key="create-stats-tree" value="true"/>
         <property key="create-symbol-file" value="true"/>
         <property key="debug-file" value="false"/>
@@ -136,8 +136,8 @@
         <property key="keep-for-xx-seconds" value=""/>
         <property key="keep-if-errors" value="false"/>
         <property key="keep-if-no-errors" value="false"/>
-        <property key="keep-scratch-files-on-disk" value="true"/>
-        <property key="list-file" value="+LN"/>
+        <property key="keep-scratch-files-on-disk" value="false"/>
+        <property key="list-file" value="+LY"/>
         <property key="list-file-extension" value=""/>
         <property key="old-error-file-format" value="false"/>
         <property key="opt-level" value="9"/>

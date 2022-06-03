@@ -31,6 +31,9 @@ void RF_timer_isr(void){
 /*
  * Enciende la recepcion RF y configura el Timer para que incremente
  * cada 1uS, asi facilita los calculos de tiempo
+ * 
+ * Usa 13 de ROM (con timer 0)
+ * Usa 15 de ROM (con timer 1)
  */
 void EncenderRF(void){
 #ifdef RF_RX_TIMER0
@@ -152,9 +155,9 @@ short DataFrameComplete(void){
  * Ocupa unos 143 de ROM
  */
 short DataFrameComplete(void){
-int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
-int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
-int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
 		
 	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
@@ -198,13 +201,13 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 /* 
  * Parecida a v1, pero utiliza el SYNC como inicio de la trama
  * 
- * Ocupa unos 153 de ROM
+ * Ocupa 161 de ROM
  */
 short DataFrameComplete(void){
 static int1 flagPulseSync = FALSE;
-int32 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
-int32 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
-int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
+int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
+int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
 		
 	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
@@ -235,15 +238,20 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
 				RestartRFmantenido();
 				
+				/*LED1 = false;
+				delay_us(1);
+				LED1 = true;*/
+				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
+				
 				return(TRUE);				//data frame complete, returns TRUE
 			}
 		}
 		else{
 			CountedBits = 0;	//noise
 			TotalFrameDuration = 0;
-		}
+	}
 	}
 	else{
 		CountedBits = 0;	//noise
@@ -262,31 +270,52 @@ int32 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Se entiende un pulso completo en el flanco ascendente
  * Devuelve TRUE si hay un pulso completo
  * 
- * Ocupa 82 de ROM
+ * Hay que hacer calculos de tiempo con la duracion de los pulsos
+ * HighPulseDuration = duracion de la parte alta del pulso
+ * TotalPulseDuration = duracion del pulso completo (H+L)
+ * TotalFrameDuratio = duracion de todos los pulsos que componen una trama
+ * TimeSinceLastValidFrame = tiempo transcurrido desde la ultima trama recibida
+ * 
+ * Ocupa 155 de ROM (usando timer 0)
+ * Ocupa 158 de ROM (usando timer 1)
  */
 short CalcTimes(void){
 int1 PulseReady = FALSE;
-int32 time;
+int32 time = 0;	//variable temporal para almacenar tiempos
 
+	//si hubo pulso cuenta duracion del pulso, duracion de la trama y tiempo desde ultima trama
 	if(flagPulse == TRUE){
 		flagPulse = FALSE;
-		time = ((int32)CountedCycles * TIMER_MAX_VAL) + TmrVal;		//obtenemos duracion del ultimo pulso
+		
+		//asumimos que un pulso no puede durar mas de 65535 uS
+		//si usamos el mismo calculo para el timer 1, la funcion ocuparia +20 de ROM
+#ifdef RF_RX_TIMER0
+		time = (CountedCycles * TIMER_MAX_VAL) + TmrVal;	//obtenemos duracion del ultimo pulso
+#else
+		time = TmrVal;										//obtenemos duracion del ultimo pulso
+#endif
 		
 		//hubo flanco ascendente __↑̅̅|__
 		if(INTEDG == FALLING){
-			TotalPulseDuration = time;
-			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;
+			TotalPulseDuration = time;												//guardamos tiempo desde el ultimo pulso
+			TotalFrameDuration = TotalFrameDuration + TotalPulseDuration;			//incrementamos duracion de la trama
+			TimeSinceLastValidFrame = TimeSinceLastValidFrame + TotalPulseDuration;	//incrementamos tiempo desde ultima trama
+			
+			time = TimeSinceLastValidFrame;
 			PulseReady = TRUE;
 		}
 		//hubo flanco descendente __|̅̅↓__
 		else{
 			HighPulseDuration = time;
 		}
-		
-		TimeSinceLastValidFrame = TimeSinceLastValidFrame + time;	//guardamos duracion del ultimo pulso
+	}
+	//si no hubo pulso cuenta el tiempo desde la ultima trama para RFmantenido
+	else{
+		time = TimeSinceLastValidFrame + ((int32)Cycles * TIMER_MAX_VAL) + GET_TIMER_VAL;
 	}
 	
-	if(TimeSinceLastValidFrame > RF_MANTENIDO_TIME_OUT_US){
+	//si el tiempo es mayor al establecido para RFmantenido, entonces lo apaga
+	if(time > RF_MANTENIDO_TIME_OUT_US){
 		RestartRFmantenido();
 		RFmantenido = FALSE;
 	}
@@ -297,24 +326,33 @@ int32 time;
 /*
  * Llamar a esta funcion en el loop principal para que se detecten
  * los bits de RF. Devuelve TRUE cuando la trama esta completa
+ * 
+ * Usa 9 de ROM
  */
 short DataReady(void){
-short Ready = FALSE;
-	
 	if(CalcTimes() == TRUE){				//comprueba si se recibio pulso
-		Ready = DataFrameComplete();
+		return(DataFrameComplete());
 	}
 	
-	return(Ready);
+	return(FALSE);	//default behaviour
 }
 
 /*
  * Devuelve el tiempo que ha durado la ultima trama RF
+ * 
+ * Usa 10 de ROM
  */
 int32 GetRFTime(void){
 	return(LastFrameDuration);
 }
 
+/*
+ * Llamar a esta funcion cuando queremos que RFmantenido no llegue al tiempo
+ * Por ejemplo, cuando llega una nueva trama de datos, o si estamos haciendo
+ * algo que bloquea el RF
+ * 
+ * Usa 5 de ROM
+ */
 void RestartRFmantenido(void){
 	TimeSinceLastValidFrame = 0;
 }

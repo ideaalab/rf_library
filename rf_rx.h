@@ -138,8 +138,14 @@ int1 RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un ma
 
 int8 CountedBits = 0;				//numero de bits contados
 
-int16 Cycles = 0;					//vueltas del timer0/1
-int16 CountedCycles = 0;			//vueltas del timer0/1 almacenadas para que no cambien en una posible interrupcion
+//asumimos que un pulso (H+L) no puede ser mayor a 65535
+#ifdef RF_RX_TIMER0
+int16 Cycles = 0;					//vueltas del timer0
+int16 CountedCycles = 0;			//vueltas del timer0 almacenadas para que no cambien en una posible interrupcion
+#else
+int8 Cycles = 0;					//vueltas del timer1
+int8 CountedCycles = 0;				//vueltas del timer1 almacenadas para que no cambien en una posible interrupcion
+#endif
 int16 HighPulseDuration = 0;		//duracion de la parte alta del pulso
 int16 TotalPulseDuration = 0;		//duracion del pulso completo (alta + baja))
 
