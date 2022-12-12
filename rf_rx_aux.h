@@ -140,6 +140,12 @@
 #else
 	#define GRABAR_DIRECCIONES
 	#warning "Los canales de los mandos no se graban, solo se graba la direccion del mando (2 bytes)"
+
+	#ifndef RF_ADDR_BITS
+		#warning "Hay que declarar el numero de bits de las direcciones (1 a 16)"
+	#else
+		#define RF_ADDR_MASK	((1<<RF_ADDR_BITS)-1)
+	#endif
 #endif
 
 #ifndef POS_MEM_MANDOS_START_RF
@@ -165,7 +171,6 @@
 #define LAST_POS_TO_MOVE	(POS_MEM_MANDOS_START_RF)
 
 #ifdef GRABAR_DIRECCIONES	//se graban solo direcciones (2 bytes))
-#warning "Comprobar si esta bien"
 #define FIRST_POS_TO_MOVE		(POS_MEM_MANDOS_START_RF + ((NUM_MANDOS_RF - 1) * RF_SAVE_BYTES) - 1)
 #define POS_TO_JUMP				(RF_SAVE_BYTES)
 #define	POS_MEM_MANDOS_END_RF	(POS_MEM_MANDOS_START_RF + (NUM_MANDOS_RF * RF_SAVE_BYTES) - 1)
@@ -197,7 +202,7 @@ rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias
 
 /* PROTOTIPOS PUBLICOS */
 short AnalizarRF(void);
-short AnalizarRF(rfRemote* c);
+short AnalizarRF(rfRemote* DatosRF);
 void GrabarMando(void);
 void GrabarMando(rfRemote* DatosRF);
 #ifdef GRABAR_CANALES
@@ -208,6 +213,9 @@ void GrabarBloqueMandos(rfRemote* DatosRF);
 #endif
 short LeerMandos(void);
 void BorrarMandos(void);
+#if definedinc(STDOUT)
+void PrintMem(void);
+#endif
 
 /* PROTOTIPOS PRIVADOS */
 void MoverBloque(int from, int to, int offset);
