@@ -161,6 +161,7 @@ int32 TotalFrameDuration = 0;		//duracion de todos los pulsos recibidos
 int32 TimeSinceLastValidFrame = 0;	//tiempo transcurrido desde el ultimo dato valido
 
 rfRemote rfBuffer;					//buffer de recepcion
+rfRemote rfReceived;				//data received
 
 /* PROTOTIPOS */
 void EXT_isr(void);

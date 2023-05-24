@@ -204,9 +204,9 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Ocupa 161 de ROM
  */
 short DataFrameComplete(void){
-int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
-int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
-int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
+int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64 (>1.56%))
+int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16 (<6.25%)
+int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2 (>50%)
 		
 	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
@@ -225,9 +225,9 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				shift_right(&rfBuffer,3,1);	//shift in received bit 1
 			}
 			
-			if(CountedBits < BUFFER_SIZE){	//no more than BUFFER_SIZE
+			//if(CountedBits < BUFFER_SIZE){	//no more than BUFFER_SIZE
 				++CountedBits;				//adds one
-			}
+			//}
 			
 			//else{							//assume frame is complete
 			if(CountedBits == BUFFER_SIZE){	//data frame complete?
@@ -235,11 +235,12 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 				flagPulseSync = FALSE;
 				
 				rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
+				rfReceived.Completo = rfBuffer.completo;	//copy the value in buffer to rfReceived
 				RestartRFmantenido();
 				
-				/*LED1 = false;
+				/*LED = false;
 				delay_us(1);
-				LED1 = true;*/
+				LED = true;*/
 				
 				LastFrameDuration = TotalFrameDuration;
 				TotalFrameDuration = 0;
@@ -250,7 +251,7 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 		else{
 			CountedBits = 0;	//noise
 			TotalFrameDuration = 0;
-	}
+		}
 	}
 	else{
 		//noise
