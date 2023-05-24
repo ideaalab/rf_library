@@ -204,7 +204,6 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  * Ocupa 161 de ROM
  */
 short DataFrameComplete(void){
-static int1 flagPulseSync = FALSE;
 int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64
 int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
 int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
@@ -254,9 +253,8 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 	}
 	}
 	else{
-		CountedBits = 0;	//noise
-		TotalFrameDuration = 0;
-		flagPulseSync = FALSE;
+		//noise
+		LimpiarRF();
 	}
 	
 	return(FALSE);			//incomplete data frame, returns FALSE
@@ -355,4 +353,13 @@ int32 GetRFTime(void){
  */
 void RestartRFmantenido(void){
 	TimeSinceLastValidFrame = 0;
+}
+
+/*
+ * Limpia los pulsos recibidos y reinicia las variables
+ */
+void LimpiarRF(void){
+	CountedBits = 0;	//noise
+	TotalFrameDuration = 0;
+	flagPulseSync = FALSE;
 }

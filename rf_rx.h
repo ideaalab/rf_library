@@ -134,6 +134,7 @@
 
 /* VARIABLES GLOBALES */
 int1 flagPulse = FALSE;				//indica si hay un pulso para contabilizar
+int1 flagPulseSync = FALSE;			//indica si se recibio el pulso sync
 int1 RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un mando a distancia
 
 int8 CountedBits = 0;				//numero de bits contados
@@ -171,5 +172,6 @@ short CalcTimes(void);
 short DataReady(void);
 int32 GetRFTime(void);
 void RestartRFmantenido(void);
+void LimpiarRF(void);
 
 #endif	/* RF_RX_H */

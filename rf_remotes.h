@@ -402,6 +402,13 @@ typedef union{
 	/* BITS */
 	short Bits[32];		//32 bits
 	
+	/* GENERIC */
+	struct{
+		long Addr;		//bits 0-15
+		int Dat;		//bits 16-23
+		int Nul;		//bits 24-31
+	}Gen;
+	
 	/* COMPLETE */
 	int32 Completo;
 	

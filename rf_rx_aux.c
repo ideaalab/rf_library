@@ -17,7 +17,24 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
-	#warning "Sin implementar"
+	#warning "Comprobar"
+	
+	/* comprueba si la direccion recibida coincide con algun mando */
+	//recorre los mandos
+	for(int m = 0; m < NUM_MANDOS_RF; m++){		
+		//printf("Rcv: 0x%04LX / Masked: 0x%04LX / Mem: 0x%04LX\r\n", Recibido.Gen.Addr, Recibido.Gen.Addr & RF_ADDR_MASK;, MemRF[m].Addr);
+		if((Recibido.Gen.Addr & RF_ADDR_MASK) == MemRF[m].Addr){
+			Match = TRUE;
+		}
+	}
+
+	RFmantenido = Match;
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
+
+	return(Match);
 #else
 
 	//printf("\r\nR : 0x %08LX\r\n", Recibido.Completo);
@@ -79,7 +96,24 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
-	#warning "Sin implementar"
+	#warning "Comprobar"
+	
+	/* comprueba si la direccion recibida coincide con algun mando */
+	//recorre los mandos
+	for(int m = 0; m < NUM_MANDOS_RF; m++){		
+		//printf("Rcv: 0x%04LX / Masked: 0x%04LX / Mem: 0x%04LX\r\n", DatosRF->Gen.Addr, DatosRF->Gen.Addr & RF_ADDR_MASK;, MemRF[m].Addr);
+		if((DatosRF->Gen.Addr & RF_ADDR_MASK) == MemRF[m].Addr){
+			Match = TRUE;
+		}
+	}
+
+	RFmantenido = Match;
+	
+	if(Match == TRUE){
+		RestartRFmantenido();
+	}
+
+	return(Match);
 #else
 	
 	/* comprueba si la direccion recibida coincide con algun mando */
@@ -141,10 +175,11 @@ void GrabarMando(void){
 	MoverBloque(LAST_POS_TO_MOVE, FIRST_POS_TO_MOVE, POS_TO_JUMP);
 	
 #ifdef GRABAR_DIRECCIONES
-#warning "Comprobar"
+	long addr = (Recibido.Gen.Addr & RF_ADDR_MASK);
+	
 	//graba la direccion recibida en la primera posicion (2 bytes)
-	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, Recibido.Bytes.Lo);	//Ch4.AddrLo
-	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, Recibido.Bytes.Mi);	//Ch4.AddrHi
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, addr);		//AddrLo
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, addr>>8);	//AddrHi
 #else
 	//graba el canal recibido en la primera posicion (3 bytes)
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_LO, Recibido.Bytes.Lo);	//Ch4.AddrLo
@@ -163,16 +198,17 @@ void GrabarMando(void){
  * Graba mandos: 156 de ROM
  */
 void GrabarMando(rfRemote* DatosRF){
-
 	disable_interrupts(GLOBAL);	//no quiero que nada interrumpa la grabacion
 	
 	MoverBloque(LAST_POS_TO_MOVE, FIRST_POS_TO_MOVE, POS_TO_JUMP);
 	
 #ifdef GRABAR_DIRECCIONES
 #warning "Comprobar"
+	long addr = (DatosRF->Gen.Addr & RF_ADDR_MASK);
+	
 	//graba la direccion recibida en la primera posicion (2 bytes)
-	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, DatosRF->Bytes.Lo);	//Ch4.AddrLo
-	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, DatosRF->Bytes.Mi);	//Ch4.AddrHi
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_LO, addr);		//AddrLo
+	write_eeprom(POS_MEM_MANDOS_START_RF + RF_ADDR_HI, addr>>8);	//AddrHi
 #else
 	//graba el canal recibido en la primera posicion (3 bytes)
 	write_eeprom(POS_MEM_MANDOS_START_RF + RF_BYTE_LO, DatosRF->Bytes.Lo);	//Ch4.AddrLo
@@ -252,14 +288,13 @@ short LeerMandos(void){
 	
 //lee los mandos
 #ifdef GRABAR_DIRECCIONES
-#warning "Comprobar"
 	for(x = 0; x<NUM_MANDOS_RF; x++){
 		PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
 		MemRF[x].AddrLo = read_eeprom(PosBase + RF_ADDR_LO);
 		MemRF[x].AddrHi = read_eeprom(PosBase + RF_ADDR_HI);
 
 		//si la direccion leida es diferente a 0xFFFF quiere decir que hay algo grabado
-		if(MemRF[x].Addr != 0){
+		if((MemRF[x].Addr != 0) && (MemRF[x].Addr != 0xFFFF)){
 			Mando = TRUE;
 		}
 	}
@@ -333,3 +368,41 @@ void MoverBloque(int from, int to, int offset){
 	
 	enable_interrupts(GLOBAL);
 }
+
+#if definedinc(STDOUT)
+/*
+ * Muestra los mandos grabados en memoria
+ */
+void PrintMem(void){
+int PosBase = 0;
+
+	printf("\r\n - MEMORIA - \r\n");
+			
+	#ifdef GRABAR_DIRECCIONES
+	for(int x = 0; x<NUM_MANDOS_RF; x++){
+		int PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
+		
+		printf("%02u: 0x %02X %02X\r\n", PosBase, read_eeprom(PosBase + RF_ADDR_HI), read_eeprom(PosBase + RF_ADDR_LO));
+		//printf("%02u: 0x %02X %02X\r\n", PosBase, MemRF[x].AddrHi, MemRF[x].AddrLo);
+	}
+	#else
+	#warning "Comprobar"
+	#if NUM_CANALES_RF == 1
+	for(int x = 0; x<NUM_MANDOS_RF; x++){
+		int PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
+
+		printf("%02u: 0x %02X %02X %02X\r\n", PosBase, read_eeprom(PosBase + RF_BYTE_HI), read_eeprom(PosBase + RF_BYTE_MI), read_eeprom(PosBase + RF_BYTE_LO));
+		//printf("%02u: 0x %02X %02X %02X\r\n", PosBase, MemRF[x][0].Bytes.Hi, MemRF[x][0].Bytes.Mi, MemRF[x][0].Bytes.Lo);
+	}
+	#else
+	#warning "Sin implementar"
+	for(x = 0; x<NUM_MANDOS_RF; x++){
+		for(int y = 0; y<NUM_CANALES_RF; y++){
+			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
+		}
+	}
+	#endif
+	#endif
+	printf("\r\n");
+}
+#endif
