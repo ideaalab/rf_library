@@ -207,55 +207,52 @@ short DataFrameComplete(void){
 int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiempo total / 64 (>1.56%))
 int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16 (<6.25%)
 int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2 (>50%)
+	
+	if(TotalPulseDuration < MIN_PULSE){		//check if pulse is long enough, to avoid noise
+		//noise
+		LimpiarRF();
+		return(FALSE);
+	}
 		
-	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
-		
-		/* PULSO SYNC */
-		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
-			CountedBits = 0;				//restart counted bits
-			flagPulseSync = TRUE;
+	/* PULSO SYNC */
+	if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
+		CountedBits = 0;				//restart counted bits
+		flagPulseSync = TRUE;
+	}
+	else if(flagPulseSync == TRUE){
+	/* PULSO CERO */
+		if(HighPulseDuration < dutyLowMax){
+			shift_right(&rfBuffer,3,0);	//shift in received bit 0
 		}
-		else if(flagPulseSync == TRUE){
-			/* PULSO CERO */
-			if(HighPulseDuration < dutyLowMax){
-				shift_right(&rfBuffer,3,0);	//shift in received bit 0
-			}
-			/* PULSO UNO */
-			else{
-				shift_right(&rfBuffer,3,1);	//shift in received bit 1
-			}
-			
-			//if(CountedBits < BUFFER_SIZE){	//no more than BUFFER_SIZE
-				++CountedBits;				//adds one
-			//}
-			
-			//else{							//assume frame is complete
-			if(CountedBits == BUFFER_SIZE){	//data frame complete?
-				//CountedBits = 0;			//restart counted bits (not needed? as its already cleared on sync pulse)
-				flagPulseSync = FALSE;
-				
-				rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
-				rfReceived.Completo = rfBuffer.completo;	//copy the value in buffer to rfReceived
-				RestartRFmantenido();
-				
-				/*LED = false;
-				delay_us(1);
-				LED = true;*/
-				
-				LastFrameDuration = TotalFrameDuration;
-				TotalFrameDuration = 0;
-				
-				return(TRUE);				//data frame complete, returns TRUE
-			}
-		}
+	/* PULSO UNO */
 		else{
-			CountedBits = 0;	//noise
+			shift_right(&rfBuffer,3,1);	//shift in received bit 1
+		}
+
+		++CountedBits;				//adds one
+
+		//else{							//assume frame is complete
+		if(CountedBits == BUFFER_SIZE){	//data frame complete?
+			//CountedBits = 0;			//restart counted bits (not needed? as its already cleared on sync pulse)
+			flagPulseSync = FALSE;
+
+			rfBuffer.Bytes.Nul = 0;		//clear the null byte, as it may have spureus data and will not match with the expected value
+			rfReceived.Completo = rfBuffer.completo;	//copy the value in buffer to rfReceived
+			RestartRFmantenido();
+
+			/*LED = false;
+			delay_us(1);
+			LED = true;*/
+
+			LastFrameDuration = TotalFrameDuration;
 			TotalFrameDuration = 0;
+
+			return(TRUE);				//data frame complete, returns TRUE
 		}
 	}
 	else{
-		//noise
-		LimpiarRF();
+		CountedBits = 0;	//noise
+		TotalFrameDuration = 0;
 	}
 	
 	return(FALSE);			//incomplete data frame, returns FALSE
