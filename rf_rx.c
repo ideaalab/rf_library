@@ -240,6 +240,10 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 			rfReceived.Completo = rfBuffer.completo;	//copy the value in buffer to rfReceived
 			RestartRFmantenido();
 
+#warning "Sometimes spureus rf make a 0xFFFFFF value?"
+//esto genera problema con mandos almacenados. Las posiciones vacias tambien son 0xFFFFFF.
+//Habria que filtrar las activaciones desde la libreria o que el programa sea el que no tenga en cuenta eso?
+		
 			/*LED = false;
 			delay_us(1);
 			LED = true;*/
