@@ -376,7 +376,7 @@ void MoverBloque(int from, int to, int offset){
 void PrintMem(void){
 int PosBase = 0;
 
-	printf("\r\n - MEMORIA - \r\n");
+	printf("\r\n - MANDOS ALMACENADOS - \r\n");
 			
 	#ifdef GRABAR_DIRECCIONES
 	for(int x = 0; x<NUM_MANDOS_RF; x++){
@@ -389,17 +389,24 @@ int PosBase = 0;
 	#warning "Comprobar"
 	#if NUM_CANALES_RF == 1
 	for(int x = 0; x<NUM_MANDOS_RF; x++){
-		int PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
+		PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP);
 
 		printf("%02u: 0x %02X %02X %02X\r\n", PosBase, read_eeprom(PosBase + RF_BYTE_HI), read_eeprom(PosBase + RF_BYTE_MI), read_eeprom(PosBase + RF_BYTE_LO));
 		//printf("%02u: 0x %02X %02X %02X\r\n", PosBase, MemRF[x][0].Bytes.Hi, MemRF[x][0].Bytes.Mi, MemRF[x][0].Bytes.Lo);
 	}
 	#else
-	#warning "Sin implementar"
-	for(x = 0; x<NUM_MANDOS_RF; x++){
+	#warning "Comprobar"
+	for(int x = 0; x<NUM_MANDOS_RF; x++){
+		
+		printf("Mem %02u:", x+1);
+		
 		for(int y = 0; y<NUM_CANALES_RF; y++){
 			PosBase = POS_MEM_MANDOS_START_RF + (x*POS_TO_JUMP) + (y*RF_SAVE_BYTES);
+			
+			printf(" | CH%02u: 0x %02X %02X %02X", y+1, read_eeprom(PosBase + RF_BYTE_HI), read_eeprom(PosBase + RF_BYTE_MI), read_eeprom(PosBase + RF_BYTE_LO));
 		}
+		
+		printf(" |\r\n");
 	}
 	#endif
 	#endif
