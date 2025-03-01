@@ -6,31 +6,39 @@ Martin Andersen
 
 ---
 
-## Contenido
+## 📜 Licencia
 
-- [Recepción RF](#recepcion-rf)
-- [RF Auxiliar](#libreria-auxiliar-de-recepcion-rf)
+Este proyecto está licenciado bajo la **Licencia MIT**.  
+Puedes leer los términos completos en el siguiente enlace:  
+
+[Licencia MIT](https://opensource.org/licenses/MIT)
 
 ---
 
-# Recepción RF
+## Contenido
+
+- [Recepción RF](#-recepción-rf)
+- [RF Auxiliar](#%EF%B8%8F-librería-auxiliar-de-recepción-rf)
+---
+
+# 🧮 Recepción RF
 
 ## 📌 Índice
 
-- [¿Qué hace esta librería?](#que-hace-esta-libreria)
-- [Introducción](#introduccion)
-  - [Formato de la trama de datos](#formato-de-la-trama-de-datos)
-- [Configuración de la Librería](#configuracion-de-la-libreria)
-  - [Selección del Temporizador](#seleccion-del-temporizador)
-  - [Tiempo de Mantenimiento de Señal](#tiempo-de-mantenimiento-de-senal)
-  - [Versión del Algoritmo de Decodificación](#version-del-algoritmo-de-decodificacion)
-- [Simulación de Pulsación de Botón](#simulacion-de-pulsacion-de-boton)
-- [Variables](#variables)
-- [Funciones](#funciones)
-  - [Inicialización y Control](#inicializacion-y-control)
-  - [Estado y Datos](#estado-y-datos)
-- [Uso de la Librería](#uso-de-la-libreria)
-- [Recursos Utilizados](#recursos-utilizados)
+- [¿Qué hace esta librería?](#-qué-hace-esta-librería)
+- [Introducción](#-introducción)
+  - [Formato de la trama de datos](#-formato-de-la-trama-de-datos)
+- [Configuración de la Librería](#%EF%B8%8F-configuraci%C3%B3n-de-la-librer%C3%ADa)
+  - [Selección del Temporizador](#-selecci%C3%B3n-del-temporizador)
+  - [Tiempo de Mantenimiento de Señal](#%EF%B8%8F-tiempo-de-mantenimiento-de-señal)
+  - [Versión del Algoritmo de Decodificación](#-versión-del-algoritmo-de-decodificación)
+- [Simulación de Pulsación de Botón](#%EF%B8%8F-simulación-de-pulsación-de-botón)
+- [Variables](#-variables)
+- [Funciones](#-funciones)
+  - [Inicialización y Control](#-inicialización-y-control)
+  - [Estado y Datos](#-estado-y-datos)
+- [Uso de la Librería](#-uso-de-la-librería)
+- [Recursos Utilizados](#%EF%B8%8F-recursos-utilizados)
 
 ---
 
@@ -136,15 +144,15 @@ if(DataReady() == TRUE){
 
 ## Índice
 
-- [Que hace esta libreria?](#que-hace-esta-libreria)
-- [Introduccion](#introduccion)
-- [Como se almacenan los mandos](#como-se-almacenan-los-mandos)
-- [Configuracion de la libreria](#configuracion-de-la-libreria)
-- [Variables](#variables)
-- [Funciones](#funciones)
-  - [Comparacion y analisis](#comparacion-y-analisis)
-  - [Almacenamiento](#almacenamiento)
-  - [Recuperacion y gestion de memoria](#recuperacion-y-gestion-de-memoria)
+- [Que hace esta libreria?](#-qué-hace-esta-librería-1)
+- [Introduccion](#-introducción-1)
+- [Como se almacenan los mandos](#-métodos-de-almacenamiento)
+- [Configuracion de la libreria](#%EF%B8%8F-configuración-de-la-librería-1)
+- [Variables](#-variables)
+- [Funciones](#-funciones)
+  - [Comparacion y analisis](#-comparación-y-análisis)
+  - [Almacenamiento](#-almacenamiento)
+  - [Recuperacion y gestion de memoria](#-recuperación-y-gestión-de-memoria)
 
 ## ❓ ¿Qué hace esta librería?
 
