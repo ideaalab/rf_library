@@ -17,28 +17,27 @@ Puedes leer los términos completos en el siguiente enlace:
 
 ## Contenido
 
-- [Recepción RF](#-recepción-rf)
-- [RF Auxiliar](#%EF%B8%8F-librería-auxiliar-de-recepción-rf)
+- Recepción RF
+- RF Auxiliar
 ---
 
 # 🧮 Recepción RF
 
 ## 📌 Índice
 
-- [¿Qué hace esta librería?](#-qué-hace-esta-librería)
-- [Introducción](#-introducción)
-  - [Formato de la trama de datos](#-formato-de-la-trama-de-datos)
-- [Configuración de la Librería](#%EF%B8%8F-configuraci%C3%B3n-de-la-librer%C3%ADa)
-  - [Selección del Temporizador](#-selecci%C3%B3n-del-temporizador)
-  - [Tiempo de Mantenimiento de Señal](#%EF%B8%8F-tiempo-de-mantenimiento-de-señal)
-  - [Versión del Algoritmo de Decodificación](#-versión-del-algoritmo-de-decodificación)
-- [Simulación de Pulsación de Botón](#%EF%B8%8F-simulación-de-pulsación-de-botón)
-- [Variables](#-variables)
-- [Funciones](#-funciones)
-  - [Inicialización y Control](#-inicialización-y-control)
-  - [Estado y Datos](#-estado-y-datos)
-- [Uso de la Librería](#-uso-de-la-librería)
-- [Recursos Utilizados](#%EF%B8%8F-recursos-utilizados)
+- ¿Qué hace esta librería?
+- Introducción
+  - Formato de la trama de datos
+- Configuración de la Librería
+  - Selección del Temporizador
+  - Antirebote de Señal
+  - Versión del Algoritmo de Decodificación
+- Variables
+- Funciones
+  - Inicialización y Control
+  - Estado y Datos
+- Uso de la Librería
+- Recursos Utilizados
 
 ---
 
@@ -71,8 +70,17 @@ Cada trama de datos consta de **24 bits + 1 bit de sincronización**. Cada bit s
   #define RF_RX_TIMER0
   ```
 
-### ⏱️ Tiempo de Mantenimiento de Señal
-- La señal de recepción espera un máximo de **200 ms** antes de considerar que el botón ha sido liberado.
+### ⏱️ Antirebote de Señal
+```diff
+- ATENCIÓN! Es la funcion `AnalizarRF()` cuando detecta una coincidencia la que establece `RFmantenido = true`. Si no se usa la librería `rf_rx_aux.c`, la variable `RFmantenido` no se activa automáticamente. Si se quiere usar se debe activarse manualmente cuando se reciba una señal válida.
+```
+
+Un mando a distancia o emisor envía la trama de datos repetidas veces, una a continuación de la siguiente. Para evitar una activación por cada trama de datos recibida, la variable `RFmantenido` cambia a `true`, y cuando se deja de recibir esa trama, el valor cambia a `false`. Debido a posibles errores en la transmisión o recepción, a veces se pierde una trama intermedia, pero no indica que la señal se haya dejado de recibir. Al igual que con un pulsador, podemos aplicar un "antirebote" que contempla pequeños vacíos de señal sin que `RFmantenido` cambie a `false`.
+
+Si queremos una respuesta rápida pero propensa al ruido, establecer el tiempo de antirebote bajo (duración de 2-3 tramas completas). Esto puede provocar que una única trama enviada pueda ser interpretada como varias si se pierde alguna trama intermedia.
+
+Si preferimos una respuesta más fiable pero menos ágil, podemos establecer este tiempo más alto (duración de 5-10 tramas, por ejemplo). Pequeños cortes en la trama no afectarían a la variable `RFmantenido`, pero esta variable tardaría más en volver a `false` cuando la señal recibida se apague.
+
 - Para modificar este tiempo, definir `RF_MANTENIDO_TIME_OUT` con el valor deseado en milisegundos:
   ```c
   #define RF_MANTENIDO_TIME_OUT 500
@@ -88,18 +96,6 @@ Cada trama de datos consta de **24 bits + 1 bit de sincronización**. Cada bit s
 
 ---
 
-## 🎛️ Simulación de Pulsación de Botón
-
-- En los mandos a distancia RF, mientras la señal sea recibida, el sistema interpreta que el botón sigue presionado. Una vez que la señal desaparece, se asume que el botón ha sido soltado.
-- Debido a interferencias, pueden ocurrir pequeñas interrupciones en la recepción. Para evitar falsas detecciones, se aplica un retardo antes de considerar que el botón ha sido liberado, funcionando como un "antirrebote RF".
-- De forma predeterminada, el sistema espera hasta **200 ms** sin señal válida antes de asumir que el botón ha sido liberado.
-- Para modificar este tiempo, definir `RF_MANTENIDO_TIME_OUT` con el valor deseado en milisegundos:
-  ```c
-  #define RF_MANTENIDO_TIME_OUT 500
-  ```
-
----
-
 ## 📊 Variables
 - `rfBuffer`: Buffer de recepción que almacena los valores recibidos.
 - Comprobar `rfBuffer` solo cuando `DataReady()` devuelva `TRUE`.
@@ -111,6 +107,8 @@ Cada trama de datos consta de **24 bits + 1 bit de sincronización**. Cada bit s
 ### 🚀 Inicialización y Control
 - `EncenderRF()`: Activa la recepción RF y las interrupciones.
 - `ApagarRF()`: Desactiva la recepción RF y las interrupciones.
+- `RestartRFmantenido()`: Reinicia temporizador que cuenta el tiempo sin haber recibido señal. Normalmente solo de uso interno, pero si estamos en una funcion que bloquea el programa durante un tiempo sin recibir señal y no queremos que se reinicie RFmantenido podemos llamarla para que reinicie el contador.
+- `LimpiarRF()`: Reinicia las variables de tiempos y buffer. Normalmente solo de uso interno.
 
 ### 📡 Estado y Datos
 - `DataReady()`: Devuelve `TRUE` cuando se ha recibido una trama completa.
@@ -130,8 +128,6 @@ if(DataReady() == TRUE){
 }
 ```
 
-**Nota:** Si no se usa la librería `rf_rx_aux.c`, la variable `RFmantenido` no se activa automáticamente. Debe activarse manualmente cuando se reciba una señal.
-
 ---
 
 ## 🖥️ Recursos Utilizados
@@ -144,15 +140,16 @@ if(DataReady() == TRUE){
 
 ## Índice
 
-- [Que hace esta libreria?](#-qué-hace-esta-librería-1)
-- [Introduccion](#-introducción-1)
-- [Como se almacenan los mandos](#-métodos-de-almacenamiento)
-- [Configuracion de la libreria](#%EF%B8%8F-configuración-de-la-librería-1)
-- [Variables](#-variables)
-- [Funciones](#-funciones)
-  - [Comparacion y analisis](#-comparación-y-análisis)
-  - [Almacenamiento](#-almacenamiento)
-  - [Recuperacion y gestion de memoria](#-recuperación-y-gestión-de-memoria)
+- Que hace esta libreria?
+- Introduccion
+- Como se almacenan los mandos
+- Configuracion de la libreria
+- Variables
+- Funciones
+  - Comparacion y analisis
+  - Almacenamiento
+  - Recuperacion y gestion de memoria
+- Simulación de Pulsación de Botón
 
 ## ❓ ¿Qué hace esta librería?
 
@@ -260,6 +257,7 @@ MemRF	[x][0]
 ### 🔍 Comparación y análisis
 
 - `AnalizarRF(rfRemote)`: Compara la trama recibida con `MemRF`, guarda coincidencias en `ButtonMatch[]` y devuelve `TRUE` si hay coincidencias.
+- `FlancoMantenido()`: Devuelve `MANTENIDO_RISING`, `MANTENIDO_FALLING` o `FALSE` para detectar el inicio y fin de una pulsación de un mando a distancia. Comprobar su valor constantemente en el bucle principal para poder reaccionar a los cambios.
 
 ### 💾 Almacenamiento
 
@@ -274,3 +272,28 @@ MemRF	[x][0]
 - `BorrarMandos()`: Elimina todos los registros almacenados en EEPROM y limpia `MemRF`.
 
 ---
+
+## 🎛️ Detectar la Pulsación de un Botón del Mando
+
+En los mandos a distancia RF, mientras la señal sea recibida, el sistema interpreta que el botón sigue presionado. Una vez que la señal desaparece, se asume que el botón ha sido soltado.
+
+Ver sección **Antirebote de Señal** para ajustar el valor de antirebote y velocidad de respuesta.
+
+Usar este codigo para detectar el inicio y fin de una pulsacion o trama de datos:
+
+```c
+switch(FlancoMantenido()){
+    case(MANTENIDO_RISING):
+        //acaba de empezar a recibirse señal
+        ...
+        break;
+    case(MANTENIDO_FALLING):
+        //acaba de dejar de recibirse señal
+        ...
+        break;
+    case(FALSE):
+        //no hubo cambio
+        ...
+        break;
+}
+```

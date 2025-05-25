@@ -62,6 +62,7 @@
 /* VARIABLES GLOBALES */
 int1 flagPulse = FALSE;				//indica si hay un pulso para contabilizar
 int1 flagPulseSync = FALSE;			//indica si se recibio el pulso sync
+int1 prevRFmantenido = FALSE;		//lo usamos para saber cuando inica o acaba una pulsacion
 int1 RFmantenido = FALSE;			//indica si se esta manteniendo el pulsador de un mando a distancia
 
 int8 CountedBits = 0;				//numero de bits contados

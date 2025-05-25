@@ -59,6 +59,10 @@
 #define	POS_MEM_MANDOS_END_RF	(POS_MEM_MANDOS_START_RF + (NUM_MANDOS_RF * NUM_CANALES_RF * RF_SAVE_BYTES) - 1)
 #endif
 
+/* CONSTANTES */
+#define MANTENIDO_RISING	1
+#define MANTENIDO_FALLING	2
+
 /* VARIABLES */
 short flagSync = false;		//indica si estamos grabando un mando
 int ButtonMatch[NUM_MANDOS_RF];//indica que botones se presionaron de cada mando (max 8 botones por mando, 1bit cada boton)
@@ -82,6 +86,7 @@ rfRemote MandoVirtual[NUM_CANALES_RF];	//variable para retener en memoria varias
 /* PROTOTIPOS PUBLICOS */
 short AnalizarRF(void);
 short AnalizarRF(rfRemote* DatosRF);
+int8 FlancoMantenido(void);
 void GrabarMando(void);
 void GrabarMando(rfRemote* DatosRF);
 #ifdef GRABAR_CANALES

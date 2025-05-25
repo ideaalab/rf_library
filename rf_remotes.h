@@ -167,37 +167,6 @@
 #define BTN_8CH_8	0b11000000	//boton 8
 
 /* 
- * MANDO 6CH y MINI MANDO iRF
- * 12 bits direccion, 4 bits de tipo de mando compartidos con 12 bits de datos (dos para cada pulsador)
- */
-//posibles IDs del mando de 6ch:
-#define ID_IRF_1	0x00		//vol+/vol-/next/prev
-#define ID_IRF_2	0x0C		//play
-#define ID_IRF_3	0x03		//pause
-#define ID_IRF_4	0x0F		//play y pause juntos
-
-//pulsadores
-#define IRF_PAUSE	BTN_6CH_D0	//pause
-#define IRF_PLAY	BTN_6CH_D1	//play
-#define IRF_NEXT	BTN_6CH_D2	//next
-#define IRF_PREV	BTN_6CH_D3	//prev
-#define IRF_VDW		BTN_6CH_D4	//vol-
-#define IRF_VUP		BTN_6CH_D5	//vol+
-
-/* 
- * MANDO AVANZADO
- * 12 bits direccion, 4 bits de ID (tipo de mando), 4 bits de comando, 4 bits de valor
- */
-//ID
-#define ID_ADV_IRF	0x08
-
-//comando
-#define ADV_IRF_CHL	1	//change list
-#define ADV_IRF_CHS	2	//change song
-#define ADV_IRF_SHW	3	//show display
-#define ADV_IRF_RET	4	//return to previous song
-
-/* 
  * MANDO SENSOR
  * 12 bits direccion, 4 bits de ID (tipo de mando), 8 bits de valor
  */

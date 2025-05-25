@@ -180,8 +180,24 @@ void ComprobarRF(void){
 #endif
 	}
 	
-	//el led se enciende/apaga segun la variable RFmantenido
+	//el LED responde directamente al estado de RFmantenido, pero su valor se establece en cada paso por esta condicion
+	//si solo queremos que se cambie el estado una vez por cada flanco hay que comprobar el estado de RFmantenido y su valor anterior como estamos haciendo con el printf
 	if(flagSync == FALSE){
-		LED1 = RFmantenido;
+		LED1 = RFmantenido;	//el led se enciende/apaga segun la variable RFmantenido
+	
+#ifdef DEBUG
+		// detectamos cambio de estado:
+		if (RFmantenido && !prevRFmantenido) {
+		  // acaba de empezar a recibirse señal
+		  printf("inicio");
+		}
+		else if (!RFmantenido && prevRFmantenido) {
+		  // acaba de dejar de recibirse señal
+		  printf(" - fin\r\n");
+		}
+
+		// actualizamos el estado anterior
+		prevRFmantenido = RFmantenido;
+#endif
 	}
 }

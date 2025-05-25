@@ -150,6 +150,32 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 }
 
 /*
+ * Detecta si hay un flanco en RFmantenido
+ * Llamar a esta funcion constantemente para detectar cuando se comienza y
+ * termina de presionar un boton del mando a distancia.
+ * Si no hay flanco devuelve FALSE
+ * Si hay flanco ascendente devuelve MANTENIDO_RISING
+ * Si hay flanco descendente devuelve MANTENIDO_FALLING
+ */
+int8 FlancoMantenido(void){
+	//se ha comenzado a pulsar
+	if (RFmantenido && !prevRFmantenido) {
+		prevRFmantenido = RFmantenido;	// actualizamos el estado anterior
+		return(MANTENIDO_RISING);
+	}
+	//se ha dejado de pulsar
+	else if (!RFmantenido && prevRFmantenido) {
+		prevRFmantenido = RFmantenido;	// actualizamos el estado anterior
+		return(MANTENIDO_FALLING);
+	}
+	//no hay cambio
+	else{
+		prevRFmantenido = RFmantenido;	// actualizamos el estado anterior
+		return(FALSE);
+	}
+}
+
+/*
  * Graba los 3 bytes del mando recibido en la memoria EEPROM.
  * La foma de grabar es como una pila FIFO. Primero se desplazan las memorias
  * ya guardadas una posicion hacia atras, y luego se graba el mando recibido
