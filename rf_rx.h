@@ -45,8 +45,12 @@
 #define FALLING		0	//falling edge
 #define RISING		1	//rising edge
 
-#define MIN_PULSE	300	//minimum duration allowed for received pulse, in uS (theoreticaly is 16*ALFA)
-#define BUFFER_SIZE	24	//length of the data stream received
+#ifndef RF_TRAMA_MINIMA
+#define RF_TRAMA_MINIMA	16	//duracion de la trama mas corta que podemos recibir (en mS)
+#endif
+
+#define RF_MIN_PULSE	(RF_TRAMA_MINIMA * 1000 / 128)//300	//minimum duration allowed for received pulse, in uS (theoreticaly is 16*ALFA)
+#define RF_BUFFER_SIZE	24	//length of the data stream received
 #define RF_MANTENIDO_TIME_OUT_US	(RF_MANTENIDO_TIME_OUT * 1000)	//tiempo en uS para que se considere que se ha dejado de pulsar el boton
 
 #ifdef RF_RX_TIMER0

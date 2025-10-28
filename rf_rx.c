@@ -97,12 +97,12 @@ void ApagarRF(void){
  */
 short DataFrameComplete(void){
 	//comprobamos si el pulso es suficientemente largo y asi evitar analizar "ruido"
-	if(TotalPulseDuration > MIN_PULSE){
+	if(TotalPulseDuration > RF_MIN_PULSE){
 		Duty = ((int32)HighPulseDuration * 100) / TotalPulseDuration;
 		
 		/* PULSO SYNC */
 		if((MIN_SYNC <= Duty) && (Duty <= MAX_SYNC)){
-			if(CountedBits == BUFFER_SIZE){		//la trama esta completa?
+			if(CountedBits == RF_BUFFER_SIZE){		//la trama esta completa?
 				CountedBits = 0;				//reinicio variable
 				rfBuffer.Bytes.Nul = 0;
 				return(TRUE);					//trama completa, devuelvo TRUE
@@ -114,7 +114,7 @@ short DataFrameComplete(void){
 		else if((MIN_ZERO <= Duty) && (Duty <= MAX_ZERO)){
 			shift_right(&rfBuffer,3,0);			//"empujo" el bit recibido por la derecha
 			
-			if(CountedBits < BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
+			if(CountedBits < RF_BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
 				++CountedBits;					//suma uno
 		}
 		/* PULSO UNO */
@@ -159,11 +159,11 @@ int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiemp
 int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16
 int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2
 		
-	if(TotalPulseDuration > MIN_PULSE){		//check if pulse is long enough, to avoid noise
+	if(TotalPulseDuration > RF_MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		
 		/* PULSO SYNC */
 		if((HighPulseDuration > syncMin) && (HighPulseDuration < syncMax)){
-			if(CountedBits == BUFFER_SIZE){	//data frame complete?
+			if(CountedBits == RF_BUFFER_SIZE){	//data frame complete?
 				CountedBits = 0;			//restart counted bits
 				rfBuffer.Bytes.Nul = 0;
 				RestartRFmantenido();
@@ -208,7 +208,7 @@ int16 syncMin = TotalPulseDuration >> 6;	//duty tiene que ser mayor que el tiemp
 int16 syncMax = TotalPulseDuration >> 4;	//duty tiene que ser menor que el tiempo total / 16 (<6.25%)
 int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el tiempo total / 2 (>50%)
 	
-	if(TotalPulseDuration < MIN_PULSE){		//check if pulse is long enough, to avoid noise
+	if(TotalPulseDuration < RF_MIN_PULSE){		//check if pulse is long enough, to avoid noise
 		//noise
 		LimpiarRF();
 		return(FALSE);
@@ -232,7 +232,7 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
 		++CountedBits;				//adds one
 
 		//else{							//assume frame is complete
-		if(CountedBits == BUFFER_SIZE){	//data frame complete?
+		if(CountedBits == RF_BUFFER_SIZE){	//data frame complete?
 			//CountedBits = 0;			//restart counted bits (not needed? as its already cleared on sync pulse)
 			flagPulseSync = FALSE;
 

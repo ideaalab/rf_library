@@ -59,6 +59,19 @@ Cada trama de datos consta de **24 bits + 1 bit de sincronización**. Cada bit s
 - **UNO:** 75% duty del pulso
 - **SYNC:** 3.125% duty del pulso
 
+Si lo vemos como unidades de tiempo, una trama completa en total suma 128 unidades de tiempo (ut) de la siguiente manera:
+Cada bit de datos son 4 ut (24 bits * 4 = 96 ut) y un sync son 32 ut.
+- **bit 0:** 1 ut HIGH + 3 ut LOW      |¯|___
+- **bit 1:** 3 ut HIGH + 1 ut LOW      |¯¯¯|_
+- **bit sync:** 1 ut HIGH + 31 ut LOW  |¯|_______________________________
+
+Cuanto dura una unidad de tiempo depende de: el encoder, el voltaja y la resistencia de oscilación del emisor.
+Valores típicos para 1 unidad de tiempo:
+- **500uS** nos da una trama de 64mS
+- **250uS** nos da una trama de 32mS
+- **125uS** nos da una trama de 16mS
+
+Este valor es importante ya que la libreria desecha pulsos de menos de RF_MIN_PULSE para filtrar ruido. Poner un valor muy bajo nos permite recibir tramas mas rapidas, pero tambien capta más ruido. Por el contrario valores mas altos recibe tramas mas lentas pero filtra más ruido.
 ---
 
 ## ⚙️ Configuración de la Librería
