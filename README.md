@@ -1,4 +1,14 @@
-# 📡 Biblioteca RF
+# Soporte de Frecuencias
+
+La librería soporta las siguientes frecuencias de reloj:
+- 4MHz, 8MHz, 16MHz, 32MHz: El timer incrementa cada 1μs
+- 24MHz, 48MHz: El timer incrementa cada 0.666μs
+
+Para 24MHz y 48MHz se utilizan prescalers especiales:
+- 24MHz: DIV_4 -> 1.5MHz (0.666μs por tick)
+- 48MHz: DIV_8 -> 1.5MHz (0.666μs por tick)
+
+La librería convierte automáticamente todos los valores de tiempo a microsegundos reales usando la macro `RF_TICKS_TO_US()`, por lo que todas las mediciones y comparaciones de tiempo se hacen SIEMPRE en microsegundos, independientemente de la frecuencia del reloj.# 📡 Biblioteca RF
 
 ## 👤 Autor
 Martin Andersen

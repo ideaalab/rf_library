@@ -53,6 +53,20 @@
 #define RF_BUFFER_SIZE	24	//length of the data stream received
 #define RF_MANTENIDO_TIME_OUT_US	(RF_MANTENIDO_TIME_OUT * 1000)	//tiempo en uS para que se considere que se ha dejado de pulsar el boton
 
+/*
+ * RF_TICKS_TO_US(x): Convierte ticks de timer a microsegundos reales.
+ * - En frecuencias de 24 y 48 MHz, el timer incrementa cada 0.666us.
+ * - Esta macro convierte automáticamente los ticks a us con un factor de 3/2.
+ * - En el resto de frecuencias (4, 8, 16, 32 MHz), un tick equivale a 1us.
+ * Todas las variables y comparaciones de tiempo están en microsegundos reales.
+ */
+#if getenv("CLOCK") == 24000000 || getenv("CLOCK") == 48000000
+    // Convert ticks (0.666us) to real uS: t_us = t_ticks * 3 / 2
+    #define RF_TICKS_TO_US(x)    (((x) * 3) / 2)
+#else
+    #define RF_TICKS_TO_US(x)    (x)
+#endif
+
 #ifdef RF_RX_TIMER0
 #define TIMER_MAX_VAL		256
 #define GET_TIMER_VAL		get_timer0()
@@ -79,8 +93,9 @@ int16 CountedCycles = 0;			//vueltas del timer0 almacenadas para que no cambien 
 int8 Cycles = 0;					//vueltas del timer1
 int8 CountedCycles = 0;				//vueltas del timer1 almacenadas para que no cambien en una posible interrupcion
 #endif
-int16 HighPulseDuration = 0;		//duracion de la parte alta del pulso
-int16 TotalPulseDuration = 0;		//duracion del pulso completo (alta + baja))
+// Todas las duraciones (HighPulseDuration, TotalPulseDuration, etc.) se expresan en us reales.
+int16 HighPulseDuration = 0;		//duracion de la parte alta del pulso, en us
+int16 TotalPulseDuration = 0;		//duracion del pulso completo (alta + baja)), en us
 
 #ifdef RF_RX_TIMER0
 int8 TmrVal = 0;
@@ -88,9 +103,9 @@ int8 TmrVal = 0;
 int16 TmrVal = 0;
 #endif
 
-int32 LastFrameDuration = 0;		//duracion de la ultima trama recibida
-int32 TotalFrameDuration = 0;		//duracion de todos los pulsos recibidos
-int32 TimeSinceLastValidFrame = 0;	//tiempo transcurrido desde el ultimo dato valido
+int32 LastFrameDuration = 0;		//duracion de la ultima trama recibida, en us
+int32 TotalFrameDuration = 0;		//duracion de todos los pulsos recibidos, en us
+int32 TimeSinceLastValidFrame = 0;	//tiempo transcurrido desde el ultimo dato valido, en us
 
 rfRemote rfBuffer;					//buffer de recepcion
 rfRemote rfReceived;				//data received
@@ -108,3 +123,5 @@ void RestartRFmantenido(void);
 void LimpiarRF(void);
 
 #endif	/* RF_RX_H */
+
+

@@ -20,9 +20,9 @@ void EXT_isr(void){
 
 
 #ifdef RF_RX_TIMER0
-#INT_TIMER0	//Interrupts every 256uS
+#INT_TIMER0	//Timer0 overflow interrupt
 #else
-#INT_TIMER1	//Interrupts every 65536uS
+#INT_TIMER1	//Timer1 overflow interrupt
 #endif
 void RF_timer_isr(void){
 	Cycles++;
@@ -30,10 +30,12 @@ void RF_timer_isr(void){
 
 /*
  * Enciende la recepcion RF y configura el Timer para que incremente
- * cada 1uS, asi facilita los calculos de tiempo
+ * cada 1us en la mayoría de frecuencias (4, 8, 16, 32 MHz).
+ * Para 24MHz y 48MHz, el timer incrementa cada 0.666us usando prescaler de 4 o 8.
  * 
- * Usa 13 de ROM (con timer 0)
- * Usa 15 de ROM (con timer 1)
+ * La librería convierte internamente los valores de ticks a microsegundos reales 
+ * usando la macro RF_TICKS_TO_US(), por lo que todas las mediciones y comparaciones 
+ * de tiempo se hacen SIEMPRE en microsegundos.
  */
 void EncenderRF(void){
 #ifdef RF_RX_TIMER0
@@ -46,8 +48,14 @@ void EncenderRF(void){
 		setup_timer_0(T0_INTERNAL|T0_DIV_4);
 	#elif getenv("CLOCK") == 32000000
 		setup_timer_0(T0_INTERNAL|T0_DIV_8);
+	#elif getenv("CLOCK") == 24000000
+		// 24MHz: Finstr=6MHz, DIV_4 -> 1.5MHz (0.666uS por tick)
+		setup_timer_0(T0_INTERNAL|T0_DIV_4);
+	#elif getenv("CLOCK") == 48000000
+		// 48MHz: Finstr=12MHz, DIV_8 -> 1.5MHz (0.666uS por tick)
+		setup_timer_0(T0_INTERNAL|T0_DIV_8);
 	#else
-		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
+		#ERROR "La velocidad del PIC debe ser de 4, 8, 16, 24, 32 o 48Mhz"
 	#endif
 
 	enable_interrupts(INT_TIMER0);	//enable interrupt
@@ -61,8 +69,14 @@ void EncenderRF(void){
 		setup_timer_1(T1_INTERNAL|T1_DIV_BY_4);
 	#elif getenv("CLOCK") == 32000000
 		setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);
+	#elif getenv("CLOCK") == 24000000
+		// 24MHz: Finstr=6MHz, DIV_BY_4 -> 1.5MHz (0.666uS por tick)
+		setup_timer_1(T1_INTERNAL|T1_DIV_BY_4);
+	#elif getenv("CLOCK") == 48000000
+		// 48MHz: Finstr=12MHz, DIV_BY_8 -> 1.5MHz (0.666uS por tick)
+		setup_timer_1(T1_INTERNAL|T1_DIV_BY_8);
 	#else
-		#ERROR "La velocidad del PIC debe ser de 4, 8, 16 o 32Mhz"
+		#ERROR "La velocidad del PIC debe ser de 4, 8, 16, 24, 32 o 48Mhz"
 	#endif
 
 	enable_interrupts(INT_TIMER1);	//enable interrupt
@@ -281,7 +295,8 @@ int16 dutyLowMax = TotalPulseDuration >> 1;	//duty tiene que ser menor que el ti
  */
 short CalcTimes(void){
 int1 PulseReady = FALSE;
-int32 time = 0;	//variable temporal para almacenar tiempos
+int32 ticks = 0;	//variable temporal para almacenar ticks
+int32 time = 0;		//variable temporal para almacenar tiempos
 
 	//si hubo pulso cuenta duracion del pulso, duracion de la trama y tiempo desde ultima trama
 	if(flagPulse == TRUE){
@@ -290,10 +305,12 @@ int32 time = 0;	//variable temporal para almacenar tiempos
 		//asumimos que un pulso no puede durar mas de 65535 uS
 		//si usamos el mismo calculo para el timer 1, la funcion ocuparia +20 de ROM
 #ifdef RF_RX_TIMER0
-		time = (CountedCycles * TIMER_MAX_VAL) + TmrVal;	//obtenemos duracion del ultimo pulso
+		ticks = (CountedCycles * TIMER_MAX_VAL) + TmrVal;	//obtenemos duracion del ultimo pulso
 #else
-		time = TmrVal;										//obtenemos duracion del ultimo pulso
+		ticks = TmrVal;										//obtenemos duracion del ultimo pulso
 #endif
+
+		time = RF_TICKS_TO_US(ticks);	//convertimos a uS si es necesario
 		
 		//hubo flanco ascendente __↑̅̅|__
 		if(INTEDG == FALLING){
@@ -311,7 +328,8 @@ int32 time = 0;	//variable temporal para almacenar tiempos
 	}
 	//si no hubo pulso cuenta el tiempo desde la ultima trama para RFmantenido
 	else{
-		time = TimeSinceLastValidFrame + ((int32)Cycles * TIMER_MAX_VAL) + GET_TIMER_VAL;
+		ticks = (CountedCycles * TIMER_MAX_VAL) + GET_TIMER_VAL;
+		time = TimeSinceLastValidFrame + RF_TICKS_TO_US(ticks);
 	}
 	
 	//si el tiempo es mayor al establecido para RFmantenido, entonces lo apaga
@@ -339,7 +357,8 @@ short DataReady(void){
 
 /*
  * Devuelve el tiempo que ha durado la ultima trama RF
- * 
+ * Devuelve el valor en microsegundos (us)
+ *
  * Usa 10 de ROM
  */
 int32 GetRFTime(void){

@@ -1,4 +1,3 @@
-#include "rf_remotes.h"
 #include "rf_rx_aux.h"
 
 /*
