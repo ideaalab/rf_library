@@ -173,7 +173,7 @@
 //ID
 #define ID_SENS		0x03
 
-//constantes para RemoteMatch
+//constantes para ButtonMatch
 #define RF_CHANNEL_1	0b00000001
 #define RF_CHANNEL_2	0b00000010
 #define RF_CHANNEL_3	0b00000100

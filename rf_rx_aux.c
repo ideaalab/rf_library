@@ -16,13 +16,62 @@ short Match = FALSE;	//indica si hubo alguna coincidencia
 	//ApagarRF();			//apago RF para que no interfieran las interrupciones
 	
 #ifdef GRABAR_DIRECCIONES
-	#warning "Comprobar"
-	
+//mandos de 20 bits de direccion + 4 bits de datos (4 canales ev1527)
+#if RF_ADDR_BITS == 20
+	#error "Sin implementar aun"
+	int32 addr = ;	// 20 bits de direccion
+	int8 data = Recibido.Ch4.Dat;	// 4 bits de datos
+//mandos de 16 bits de direccion + 8 bits de datos (4/8 canales)
+#elif RF_ADDR_BITS == 16
+	int16 addr = Recibido.Gen.Addr;	// 16 bits de direccion
+    int8 data = Recibido.Gen.Dat;	// 8 bits de datos
+//mandos de 12 bits de direccion + 12 bits de datos (6 canales)
+#elif RF_ADDR_BITS == 12
+	int16 addr = make16(Recibido.Ch6.AddrHi, Recibido.Ch6.AddrLo);		// 12 bits de direccion
+	int16 data = ((int16)Recibido.Ch6.DatHi << 4) | Recibido.Ch6.DatLo;	// 12 bits de datos
+#endif
+
 	/* comprueba si la direccion recibida coincide con algun mando */
 	//recorre los mandos
 	for(int m = 0; m < NUM_MANDOS_RF; m++){		
 		//printf("Rcv: 0x%04LX / Masked: 0x%04LX / Mem: 0x%04LX\r\n", Recibido.Gen.Addr, Recibido.Gen.Addr & RF_ADDR_MASK;, MemRF[m].Addr);
-		if((Recibido.Gen.Addr & RF_ADDR_MASK) == MemRF[m].Addr){
+		if(addr == MemRF[m].Addr){
+			ButtonMatch[m] = 0;	//borro previas recepciones
+
+#if RF_ADDR_BITS == 16
+            // Mando de 4/8 canales (8 bits de datos)
+            switch (data) {
+                case BTN_4CH_D0:
+                case BTN_8CH_1: bit_set(ButtonMatch[m], 0); break;
+                case BTN_4CH_D1:
+                case BTN_8CH_2: bit_set(ButtonMatch[m], 1); break;
+                case BTN_4CH_D2:
+                case BTN_8CH_3: bit_set(ButtonMatch[m], 2); break;
+                case BTN_4CH_D3:
+                case BTN_8CH_4: bit_set(ButtonMatch[m], 3); break;
+
+                case BTN_8CH_5: bit_set(ButtonMatch[m], 4); break;
+				case BTN_8CH_6: bit_set(ButtonMatch[m], 5); break;
+				case BTN_8CH_7: bit_set(ButtonMatch[m], 6); break;
+				case BTN_8CH_8: bit_set(ButtonMatch[m], 7); break;
+                default: break;
+            }
+#elif RF_ADDR_BITS == 12
+            // Mando de 6 canales (12 bits dirección + 12 bits de datos)
+            switch (data) {
+				case BTN_6CH_D0: bit_set(ButtonMatch[m], 0); break;
+				case BTN_6CH_D1: bit_set(ButtonMatch[m], 1); break;
+				case BTN_6CH_D2: bit_set(ButtonMatch[m], 2); break;
+				case BTN_6CH_D3: bit_set(ButtonMatch[m], 3); break;
+				case BTN_6CH_D4: bit_set(ButtonMatch[m], 4); break;
+				case BTN_6CH_D5: bit_set(ButtonMatch[m], 5); break;
+				default: break;
+			}
+#else
+            // si RF_ADDR_BITS es distinto, ajusta según protocolo
+			#error "Sin implementar aun"
+#endif
+
 			Match = TRUE;
 		}
 	}
