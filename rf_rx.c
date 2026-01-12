@@ -135,7 +135,7 @@ short DataFrameComplete(void){
 		else if((MIN_ONE <= Duty) && (Duty <= MAX_ONE)){
 			shift_right(&rfBuffer,3,1);			//"empujo" el bit recibido por la derecha
 			
-			if(CountedBits < BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
+			if(CountedBits < RF_BUFFER_SIZE)		//no puede ser mayor que BUFFER_SIZE
 				++CountedBits;					//suma uno
 		}
 		/* RUIDO */
